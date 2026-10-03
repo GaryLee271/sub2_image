@@ -146,6 +146,8 @@ describe('preset config policy', () => {
     vi.stubEnv('VITE_PREVENT_PRESET_CONFIG_DELETION', 'true')
     const { createDefaultOpenAIProfile, DEFAULT_SETTINGS, normalizeSettings } = await import('./apiProfiles')
     const policy = await import('./presetConfig')
+    const { initializeUserStorage } = await import('./userStorage')
+    initializeUserStorage(1)
     const { useStore } = await import('../store')
     const provider = { id: 'preset-provider', name: 'Preset Provider', submit: { path: 'generate' } }
     const profile = createDefaultOpenAIProfile({ id: 'preset-profile', provider: provider.id })

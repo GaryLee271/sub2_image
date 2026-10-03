@@ -13,6 +13,7 @@ import { getFalQueuedImageResult } from './lib/falAiImageApi'
 import { removeKeyedBackgroundFromDataUrl } from './lib/transparentImage'
 import { clearData, deleteFavoriteCollection, editOutputs, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, initStore, removeMultipleTasks, removeTask, restoreExplicitPresetConfig, reuseConfig, submitTask, useStore } from './store'
 
+vi.mock('./lib/userStorage', () => ({ userStorageKey: () => 'gpt-image-playground:user:1' }))
 vi.mock('./lib/db', () => {
   const tasks = new Map<string, TaskRecord>()
   const images = new Map<string, StoredImage>()

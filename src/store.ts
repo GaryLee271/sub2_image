@@ -1,3 +1,4 @@
+import { userStorageKey } from './lib/userStorage'
 import { isSub2Ready } from './lib/sub2Connection'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -717,7 +718,7 @@ export const useStore = create<AppState>()(
       },
     }),
     {
-      name: 'gpt-image-playground',
+      name: userStorageKey(),
       version: 2,
       partialize: getPersistedState,
       merge: mergePersistedState,

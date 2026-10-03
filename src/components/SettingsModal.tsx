@@ -1,3 +1,4 @@
+import { userStorageKey } from '../lib/userStorage'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { normalizeBaseUrl } from '../lib/api'
@@ -64,7 +65,7 @@ function newId(prefix: string) {
 }
 
 const ADD_CUSTOM_PROVIDER_VALUE = '__add_custom_provider__'
-const COPY_IMPORT_URL_OPTIONS_STORAGE_KEY = 'gpt-image-playground.copy-import-url-options'
+const COPY_IMPORT_URL_OPTIONS_STORAGE_KEY = userStorageKey('copy-import-url-options')
 
 const DEFAULT_COPY_IMPORT_URL_OPTIONS = {
   useNewApiAddress: false,
