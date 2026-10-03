@@ -691,6 +691,7 @@ function createCustomProviderContext(opts: CallApiOptions, profile: ApiProfile) 
     : sizePrompt
   const params = {
     ...opts.params,
+    ...(profile.provider === 'sb2api-async' && /^grok-/i.test(profile.model) ? { moderation: undefined } : {}),
     ...(profile.codexCli ? { size: undefined, quality: undefined } : {}),
     ...(opts.nativeTransparentBackground ? { background: 'transparent' } : {}),
   }

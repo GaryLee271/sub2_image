@@ -1563,9 +1563,11 @@ describe('callImageApi', () => {
     if (isEdit) {
       expect(body).toBeInstanceOf(FormData)
       expect((body as FormData).get('model')).toBe(model)
+      expect((body as FormData).get('moderation')).toBe(model.startsWith('grok-') ? null : 'auto')
       expect((body as FormData).get('image[]')).toBeInstanceOf(Blob)
     } else {
       expect(JSON.parse(String(body))).toMatchObject({ model, prompt: 'prompt', n: 1 })
+      expect(JSON.parse(String(body)).moderation).toBe(model.startsWith('grok-') ? undefined : 'auto')
     }
     expect(calls[1][0]).toBe('https://sub2api.example.com/v1/images/tasks/imgtask-1')
     expect(onCustomTaskEnqueued).toHaveBeenCalledWith({ taskId: 'imgtask-1' })
