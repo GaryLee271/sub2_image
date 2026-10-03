@@ -7,6 +7,7 @@ import { normalizePersistedState } from './lib/persistedState'
 import { setPresetConfig } from './lib/presetConfig'
 import { clearImages, clearTasks, commitTaskDeletion, deleteImage as deleteDbImage, deleteTask as deleteDbTask, getAllImageIds, getAllTasks, getImage, getStoredFreshImageThumbnail, putTask as putDbTask, putImage, putImageThumbnail } from './lib/db'
 import { callImageApi } from './lib/api'
+import * as customImageApi from './lib/openaiCompatibleImageApi'
 import { getFalQueuedImageResult } from './lib/falAiImageApi'
 import { removeKeyedBackgroundFromDataUrl } from './lib/transparentImage'
 import { deleteFavoriteCollection, editOutputs, getErrorToastMessage, getPersistedState, getTaskApiProfile, initStore, removeMultipleTasks, removeTask, restoreExplicitPresetConfig, reuseConfig, retryTask, submitTask, useStore } from './store'
@@ -1290,3 +1291,35 @@ it('clears gallery masks and renumbers mentions when startup cannot restore a dr
     expect(state.maskDraft).toBeNull()
     expect(state.maskEditorImageId).toBeNull()
   })
+
+
+describe('sub2 async task recovery', () => {
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
+
+  it('waits for the original key after reload and retrieves the existing task without resubmitting', async () => {
+    vi.useFakeTimers()
+    await clearTasks()
+    await clearImages()
+    vi.mocked(callImageApi).mockClear()
+    const profile = createDefaultOpenAIProfile({ id: 'sub2-key-original', provider: 'sb2api-async', apiKey: '', model: 'gpt-image-2' })
+    const other = createDefaultOpenAIProfile({ id: 'sub2-key-selected', provider: 'sb2api-async', apiKey: 'other-key', model: 'grok-imagine-image' })
+    const poll = vi.spyOn(customImageApi, 'getCustomQueuedImageResult').mockResolvedValue({ images: ['data:image/png;base64,recovered'] })
+    useStore.setState({
+      settings: normalizeSettings({ ...DEFAULT_SETTINGS, profiles: [profile, other], activeProfileId: other.id }),
+      tasks: [], inputImages: [], galleryInputDraft: null, showToast: vi.fn(),
+    })
+    await putDbTask(task({ id: 'persisted-async', status: 'running', apiProvider: 'sb2api-async', apiProfileId: profile.id, apiModel: 'gpt-image-2.5-flare', customTaskId: 'server-task-id', finishedAt: null, elapsed: null }))
+    await initStore()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(poll).not.toHaveBeenCalled()
+    expect(useStore.getState().tasks[0]).toMatchObject({ status: 'running', customTaskId: 'server-task-id' })
+
+    useStore.getState().setSettings({ profiles: [{ ...profile, apiKey: 'original-key' }, other] })
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(poll).toHaveBeenCalledWith(expect.objectContaining({ id: profile.id, apiKey: 'original-key', model: 'gpt-image-2.5-flare' }), expect.objectContaining({ id: 'sb2api-async' }), 'server-task-id', expect.any(Object))
+    expect(callImageApi).not.toHaveBeenCalled()
+    const recovered = useStore.getState().tasks.find((item) => item.id === 'persisted-async')!
+    expect(recovered.status).toBe('done')
+    expect((await getImage(recovered.outputImages[0]))?.dataUrl).toBe('data:image/png;base64,recovered')
+  })
+})

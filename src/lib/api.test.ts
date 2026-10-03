@@ -1526,36 +1526,26 @@ describe('callImageApi', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
-  it('uses the built-in sub2api async endpoints and result mapping', async () => {
+  it.each([['gpt-image-2', false], ['gpt-image-2', true], ['grok-imagine-image', false], ['grok-imagine-image', true]] as const)('uses sub2 async endpoints for %s (reference image: %s)', async (model, isEdit) => {
     const onCustomTaskEnqueued = vi.fn()
-    const fetchMock = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        task_id: 'imgtask-1',
-        status: 'processing',
-      }), {
-        status: 202,
-        headers: { 'Content-Type': 'application/json' },
-      }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        task_id: 'imgtask-1',
-        status: 'completed',
-        result: {
-          data: [{ url: 'data:image/png;base64,aW1hZ2U=' }],
-        },
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }))
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      if (String(url).startsWith('data:')) return new Response(new Blob(['image'], { type: 'image/png' }))
+      if (String(url).endsWith('/async')) return new Response(JSON.stringify({ task_id: 'imgtask-1', status: 'processing' }), { status: 202 })
+      if (String(url).endsWith('/images/tasks/imgtask-1')) return new Response(JSON.stringify({ task_id: 'imgtask-1', status: 'completed', result: { data: [{ url: 'data:image/png;base64,aW1hZ2U=' }] } }))
+      throw new Error('Unexpected URL')
+    })
 
     const result = await callImageApi({
       settings: {
         ...DEFAULT_SETTINGS,
+        model,
         baseUrl: 'https://sub2api.example.com/v1',
         apiKey: 'test-key',
         profiles: [{
           ...DEFAULT_SETTINGS.profiles[0],
           id: 'sub2api-profile',
           provider: 'sb2api-async',
+          model,
           baseUrl: 'https://sub2api.example.com/v1',
           apiKey: 'test-key',
         }],
@@ -1563,17 +1553,21 @@ describe('callImageApi', () => {
       },
       prompt: 'prompt',
       params: { ...DEFAULT_PARAMS },
-      inputImageDataUrls: [],
+      inputImageDataUrls: isEdit ? ['data:image/png;base64,aW1hZ2U='] : [],
       onCustomTaskEnqueued,
     })
 
-    expect(fetchMock.mock.calls[0][0]).toBe('https://sub2api.example.com/v1/images/generations/async')
-    expect(JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body))).toMatchObject({
-      model: 'gpt-image-2.5-sunburst',
-      prompt: 'prompt',
-      n: 1,
-    })
-    expect(fetchMock.mock.calls[1][0]).toBe('https://sub2api.example.com/v1/images/tasks/imgtask-1')
+    const calls = fetchMock.mock.calls.filter(([url]) => String(url).startsWith('https://sub2api.example.com/'))
+    expect(calls[0][0]).toBe(`https://sub2api.example.com/v1/images/${isEdit ? 'edits' : 'generations'}/async`)
+    const body = (calls[0][1] as RequestInit).body
+    if (isEdit) {
+      expect(body).toBeInstanceOf(FormData)
+      expect((body as FormData).get('model')).toBe(model)
+      expect((body as FormData).get('image[]')).toBeInstanceOf(Blob)
+    } else {
+      expect(JSON.parse(String(body))).toMatchObject({ model, prompt: 'prompt', n: 1 })
+    }
+    expect(calls[1][0]).toBe('https://sub2api.example.com/v1/images/tasks/imgtask-1')
     expect(onCustomTaskEnqueued).toHaveBeenCalledWith({ taskId: 'imgtask-1' })
     expect(result).toEqual({ images: ['data:image/png;base64,aW1hZ2U='] })
   })

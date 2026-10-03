@@ -38,6 +38,7 @@ it('automatically configures the same-origin image API after loading key and mod
   expect(result.keyId).toBe('1')
   expect(result.model).toBe('gpt-image-2')
   expect(useStore.getState().settings.apiKey).toBe('test-1')
+  expect(useStore.getState().settings.profiles.filter((profile) => profile.id.startsWith('sub2-key-')).every((profile) => profile.provider === 'sb2api-async')).toBe(true)
   expect(useStore.getState().settings.baseUrl).toBe(`${location.origin}/v1`)
   expect(useSub2Connection.getState().ready).toBe(true)
 })

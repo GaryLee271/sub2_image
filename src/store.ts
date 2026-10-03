@@ -820,7 +820,7 @@ function getFalRecoveryProfile(settings: AppSettings, task: TaskRecord) {
 
 function getCustomRecoveryProfile(settings: AppSettings, task: TaskRecord) {
   const taskProfile = getTaskApiProfile(settings, task)
-  if (taskProfile && taskProfile.provider === task.apiProvider && taskProfile.provider !== 'openai' && taskProfile.provider !== 'fal') return taskProfile
+  if (taskProfile?.apiKey && taskProfile.provider === task.apiProvider && taskProfile.provider !== 'openai' && taskProfile.provider !== 'fal') return taskProfile
   return null
 }
 
@@ -1936,8 +1936,8 @@ async function completeRecoveredCustomTask(task: TaskRecord, result: Awaited<Ret
     ...createTaskDonePatch(task, Date.now()),
     customRecoverable: false,
   })
-  useStore.getState().showToast(`自定义异步任务已恢复，共 ${outputIds.length} 张图片`, 'success')
-  showTaskCompletionNotification('图像生成完成', `自定义异步任务已恢复，共 ${outputIds.length} 张图片。`)
+  useStore.getState().showToast(`生图任务已恢复，共 ${outputIds.length} 张图片`, 'success')
+  showTaskCompletionNotification('图像生成完成', `生图任务已恢复，共 ${outputIds.length} 张图片。`)
 }
 
 async function recoverCustomTask(taskId: string) {

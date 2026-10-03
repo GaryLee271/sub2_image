@@ -61,7 +61,7 @@ export function useSub2Keys() {
       state.setSettings({ ...state.settings, profiles: [
         ...state.settings.profiles.filter((profile) => !profile.id.startsWith('sub2-key-')),
         ...items.map((key) => createDefaultOpenAIProfile({
-          id: `sub2-key-${key.id}`, name: key.name, baseUrl: `${window.location.origin}/v1`,
+          id: `sub2-key-${key.id}`, name: key.name, provider: 'sb2api-async', baseUrl: `${window.location.origin}/v1`,
           apiKey: key.key, apiMode: 'images', apiProxy: false, streamImages: false, codexCli: false,
         })),
       ] })
@@ -104,7 +104,7 @@ export function useSub2Keys() {
     if (keysToken !== token || !key || !model || !models.includes(model) || token !== localStorage.getItem('auth_token')) return
     const current = useStore.getState()
     const profile = createDefaultOpenAIProfile({
-      id: `sub2-key-${key.id}`, name: key.name, baseUrl: `${window.location.origin}/v1`,
+      id: `sub2-key-${key.id}`, name: key.name, provider: 'sb2api-async', baseUrl: `${window.location.origin}/v1`,
       apiKey: key.key, model, apiMode: 'images', apiProxy: false, streamImages: false, codexCli: false,
     })
     current.setSettings(normalizeSettings({
