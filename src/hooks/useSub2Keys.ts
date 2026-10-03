@@ -16,7 +16,7 @@ export function useSub2Keys() {
   const [loading, setLoading] = useState<'keys' | 'models' | null>(null)
   const [error, setError] = useState('')
   const [revision, setRevision] = useState(0)
-  const [savedSelection] = useState<{ keyId?: string; model?: string }>(() => {
+  const [savedSelection, setSavedSelection] = useState<{ keyId?: string; model?: string }>(() => {
     try { return JSON.parse(localStorage.getItem(userStorageKey('selection')) ?? '{}') ?? {} }
     catch { return {} }
   })
@@ -113,6 +113,7 @@ export function useSub2Keys() {
       activeProfileId: profile.id, baseUrl: profile.baseUrl, apiKey: profile.apiKey, model,
       apiMode: 'images', apiProxy: false, streamImages: false, codexCli: false,
     }))
+    setSavedSelection({ keyId, model })
     localStorage.setItem(userStorageKey('selection'), JSON.stringify({ keyId, model }))
     current.setReusedTaskApiProfile(null)
     useSub2Connection.setState({ enabled: true, ready: true, token })

@@ -109,3 +109,14 @@ it('ignores unavailable remembered keys', async () => {
   expect(result.keyId).toBe('1')
   expect(result.model).toBe('gpt-image-2')
 })
+
+it('keeps the latest selection when reloading the key list', async () => {
+  vi.mocked(loadImageModels).mockResolvedValue(['gpt-image-2', 'gpt-image-2.5-flare'])
+  await act(async () => root.render(createElement(Harness)))
+  await act(async () => result.selectKey('2'))
+  await act(async () => result.selectModel('gpt-image-2.5-flare'))
+  await act(async () => result.retry())
+  expect(result.keyId).toBe('2')
+  expect(result.model).toBe('gpt-image-2.5-flare')
+  expect(useStore.getState().settings.apiKey).toBe('test-2')
+})
