@@ -5,6 +5,7 @@ import App from './App'
 import 'streamdown/styles.css'
 import 'katex/dist/katex.min.css'
 import './index.css'
+import { redirectToSub2Login } from './lib/sub2Auth'
 import { installMobileViewportGuards } from './lib/viewport'
 
 installMobileViewportGuards()
@@ -23,8 +24,12 @@ if ('serviceWorker' in navigator) {
   }
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+if (!localStorage.getItem('auth_token')) {
+  redirectToSub2Login()
+} else {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
+}

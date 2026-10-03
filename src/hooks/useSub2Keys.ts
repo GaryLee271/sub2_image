@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { createDefaultOpenAIProfile, normalizeSettings } from '../lib/apiProfiles'
-import { loadImageKeys, loadImageModels, type Sub2Key } from '../lib/sub2Api'
+import { loadImageKeys, loadImageModels, Sub2LoginRequiredError, type Sub2Key } from '../lib/sub2Api'
+import { redirectToSub2Login } from '../lib/sub2Auth'
 import { useSub2Connection } from '../lib/sub2Connection'
 
 export function useSub2Keys() {
@@ -43,7 +44,11 @@ export function useSub2Keys() {
     const current = useStore.getState()
     const profiles = current.settings.profiles.filter((profile) => !profile.id.startsWith('sub2-key-'))
     current.setSettings(normalizeSettings({ ...current.settings, profiles, activeProfileId: profiles[0]?.id, apiKey: '' }))
-    if (!token) { setLoading(null); return () => controller.abort() }
+    if (!token) {
+      setLoading(null)
+      redirectToSub2Login()
+      return () => controller.abort()
+    }
     setLoading('keys')
     loadImageKeys(token, controller.signal).then((items) => {
       if (controller.signal.aborted) return
@@ -52,7 +57,9 @@ export function useSub2Keys() {
       setKeyId(items[0] ? String(items[0].id) : '')
       if (!items.length) setError('暂无可用于生图的 Key，请在 API Key 页面创建或选择已开启生图的 OpenAI/Grok 分组')
     }).catch((err) => {
-      if (!controller.signal.aborted) setError(err.message)
+      if (controller.signal.aborted) return
+      if (err instanceof Sub2LoginRequiredError) { redirectToSub2Login(); return }
+      setError(err.message)
     }).finally(() => {
       if (!controller.signal.aborted) setLoading(null)
     })
@@ -99,7 +106,7 @@ export function useSub2Keys() {
   }, [keyId, keys, keysToken, model, models, token])
 
   return {
-    keys, keyId, models, model, loading, error, loggedIn: Boolean(token),
+    keys, keyId, models, model, loading, error,
     selectKey: (id: string) => { clearSelection(); setKeyId(id) },
     selectModel: (value: string) => { useSub2Connection.setState({ ready: false }); setModel(value) },
     retry: () => setRevision((value) => value + 1),

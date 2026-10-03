@@ -29,8 +29,15 @@ export function imageModelIds(data: unknown, platform: string): string[] {
   }))]
 }
 
+export class Sub2LoginRequiredError extends Error {
+  constructor() { super('登录已过期，请重新登录 Sub2API') }
+}
+
 async function readResponse(response: Response, login = false) {
-  if (response.status === 401) throw new Error(login ? '登录已过期，请重新登录 Sub2API' : '此 Key 已失效，请换一个 Key')
+  if (response.status === 401) {
+    if (login) throw new Sub2LoginRequiredError()
+    throw new Error('此 Key 已失效，请换一个 Key')
+  }
   if (response.status === 403) throw new Error('当前账号或 Key 无权访问，请检查分组权限')
   if (!response.ok) throw new Error(`加载失败（${response.status}），请重试`)
   return response.json()

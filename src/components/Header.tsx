@@ -76,13 +76,9 @@ export default function Header() {
       <div className="safe-area-top invisible pointer-events-none" aria-hidden="true">
         <div className="safe-header-inner" />
       </div>
-      {(!connection.loggedIn || connection.error) && (
+      {connection.error && (
         <div role="status" className="safe-area-x max-w-7xl mx-auto py-2 text-sm text-gray-600 dark:text-gray-400">
-          {!connection.loggedIn ? (
-            <span>请先<a href="/login" target="_top" className="ml-1 text-blue-500 underline">登录 Sub2API</a>，即可加载生图 Key 和模型。</span>
-          ) : (
-            <span>{connection.error}。<button onClick={connection.retry} className="ml-2 text-blue-500 underline">重试</button><a href="/keys" target="_top" className="ml-3 text-blue-500 underline">管理 Key</a></span>
-          )}
+          <span>{connection.error}。<button onClick={connection.retry} className="ml-2 text-blue-500 underline">重试</button><a href="/keys" target="_top" className="ml-3 text-blue-500 underline">管理 Key</a></span>
         </div>
       )}
     </>
