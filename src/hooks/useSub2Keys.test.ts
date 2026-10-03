@@ -1,0 +1,61 @@
+// @vitest-environment jsdom
+import { act, createElement } from 'react'
+import { createRoot } from 'react-dom/client'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { DEFAULT_SETTINGS } from '../lib/apiProfiles'
+import { loadImageKeys, loadImageModels, type Sub2Key } from '../lib/sub2Api'
+import { useSub2Connection } from '../lib/sub2Connection'
+import { useSub2Keys } from './useSub2Keys'
+import { useStore } from '../store'
+
+vi.mock('../store', () => {
+  const state = { settings: {}, setSettings: vi.fn((settings) => { state.settings = settings }), setReusedTaskApiProfile: vi.fn() }
+  return { useStore: { getState: () => state } }
+})
+vi.mock('../lib/sub2Api', () => ({ loadImageKeys: vi.fn(), loadImageModels: vi.fn() }))
+let result: ReturnType<typeof useSub2Keys>
+let root: ReturnType<typeof createRoot>
+function Harness() { result = useSub2Keys(); return null }
+const key = (id: number): Sub2Key => ({ id, key: `test-${id}`, name: `key-${id}`, status: 'active', quota: 0, quota_used: 0, expires_at: null, group: { platform: 'openai', name: 'image', status: 'active', allow_image_generation: true } })
+beforeEach(() => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true)
+  localStorage.clear()
+  localStorage.setItem('auth_token', 'session')
+  useStore.getState().settings = DEFAULT_SETTINGS
+  useSub2Connection.setState({ enabled: false, ready: false, token: '' })
+  vi.mocked(loadImageKeys).mockResolvedValue([key(1), key(2)])
+  vi.mocked(loadImageModels).mockResolvedValue(['gpt-image-2'])
+  root = createRoot(document.createElement('div'))
+})
+afterEach(async () => { await act(async () => root.unmount()); vi.clearAllMocks(); vi.unstubAllGlobals() })
+it('automatically configures the same-origin image API after loading key and model', async () => {
+  await act(async () => root.render(createElement(Harness)))
+  expect(result.keyId).toBe('1')
+  expect(result.model).toBe('gpt-image-2')
+  expect(useStore.getState().settings.apiKey).toBe('test-1')
+  expect(useStore.getState().settings.baseUrl).toBe(`${location.origin}/v1`)
+  expect(useSub2Connection.getState().ready).toBe(true)
+})
+it('discards a late model response when switching keys', async () => {
+  let resolveOld!: (models: string[]) => void
+  vi.mocked(loadImageModels).mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve }))
+  await act(async () => root.render(createElement(Harness)))
+  await act(async () => result.selectKey('2'))
+  await act(async () => resolveOld(['gpt-image-old']))
+  expect(result.models).toEqual(['gpt-image-2'])
+  expect(useStore.getState().settings.apiKey).toBe('test-2')
+})
+it('clears keys and blocks generation when the host logs out', async () => {
+  await act(async () => root.render(createElement(Harness)))
+  await act(async () => { localStorage.removeItem('auth_token'); window.dispatchEvent(new Event('storage')) })
+  expect(result.keys).toEqual([])
+  expect(result.model).toBe('')
+  expect(useSub2Connection.getState().ready).toBe(false)
+  expect(useStore.getState().settings.profiles.some((profile) => profile.id.startsWith('sub2-key-'))).toBe(false)
+})
+it('keeps generation blocked when the key has no image models', async () => {
+  vi.mocked(loadImageModels).mockResolvedValue([])
+  await act(async () => root.render(createElement(Harness)))
+  expect(result.error).toContain('没有可用')
+  expect(useSub2Connection.getState().ready).toBe(false)
+})

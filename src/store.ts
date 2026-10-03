@@ -1,3 +1,4 @@
+import { isSub2Ready } from './lib/sub2Connection'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {
@@ -855,7 +856,9 @@ function getCustomRecoveryProfile(settings: AppSettings, task: TaskRecord) {
 export function getTaskApiProfile(settings: AppSettings, task: TaskRecord): ApiProfile | null {
   const normalized = normalizeSettings(settings)
   if (!task.apiProfileId) return null
-  return normalized.profiles.find((profile) => profile.id === task.apiProfileId) ?? null
+  const profile = normalized.profiles.find((profile) => profile.id === task.apiProfileId)
+  if (!profile) return null
+  return profile.id.startsWith('sub2-key-') ? { ...profile, model: task.apiModel || profile.model } : profile
 }
 
 function createSettingsForApiProfile(settings: AppSettings, profile: ApiProfile): AppSettings {
@@ -1202,6 +1205,7 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
   const { settings, prompt, inputImages, maskDraft, params, reusedTaskApiProfileId, reusedTaskApiProfileName, reusedTaskApiProfileMissing, showToast, setConfirmDialog } =
     useStore.getState()
 
+  if (!isSub2Ready()) { showToast('请先登录并选择可用的生图 Key 和模型', 'error'); return }
   const normalizedSettings = normalizeSettings(settings)
   let activeProfile = getActiveApiProfile(settings)
   let requestSettings = createSettingsForApiProfile(normalizedSettings, activeProfile)
@@ -1431,6 +1435,10 @@ async function executeTask(taskId: string) {
   const { settings } = useStore.getState()
   const task = useStore.getState().tasks.find((t) => t.id === taskId)
   if (!task) return
+  if (task.apiProfileId?.startsWith('sub2-key-') && !isSub2Ready()) {
+    updateTaskInStore(taskId, createTaskErrorPatch(task, '请重新登录并选择生图 Key 后重试', Date.now()))
+    return
+  }
   const taskProfile = getTaskApiProfile(settings, task)
   if (!taskProfile && task.apiProfileId) {
     updateTaskInStore(taskId, {

@@ -1,3 +1,4 @@
+import { useSub2Connection } from '../lib/sub2Connection'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { addImageFromFile, deleteFavoriteCollection, removeMultipleTasks, submitTask, taskMatchesFilterStatus, taskMatchesSearchQuery, useStore } from '../store'
@@ -412,12 +413,13 @@ export default function InputBar() {
       ? settings
       : normalizeSettings({ ...settings, activeProfileId: activeProfile.id })
   ), [activeProfile.id, settingsActiveProfile.id, settings])
-  const hasSubmitApiConfig = Boolean(activeProfile.apiKey)
+  const sub2 = useSub2Connection()
+  const hasSubmitApiConfig = Boolean(activeProfile.apiKey) && (!sub2.enabled || sub2.ready)
   const canSubmit = Boolean(prompt.trim() && hasSubmitApiConfig)
   const submitButtonAriaLabel = hasSubmitApiConfig
     ? maskDraft ? '遮罩编辑' : '生成图像'
-    : '请先配置 API'
-  const submitTooltipText = '尚未完成 API 配置，请在右上角设置中进行'
+    : sub2.enabled ? '请选择生图 Key 和模型' : '请先配置 API'
+  const submitTooltipText = sub2.enabled ? '请在顶部选择可用的生图 Key 和模型' : '尚未完成 API 配置，请在右上角设置中进行'
   const promptPlaceholder = '描述你想生成的图片，可输入 @ 来指定参考图...'
   const submitCurrentMode = useCallback(() => { void submitTask() }, [])
   const syncPromptFromContentEditable = useCallback(() => {

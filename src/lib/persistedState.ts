@@ -1,3 +1,4 @@
+import { stripSub2Keys } from './sub2Api'
 import type { AppSettings, FavoriteCollection, InputDraft, InputImage, MaskDraft, PresetConfig, TaskParams } from '../types'
 import { normalizeSettings } from './apiProfiles'
 import { ensureDefaultFavoriteCollection, normalizeFavoriteCollections, resolveDefaultFavoriteCollectionId } from './favoriteState'
@@ -78,7 +79,7 @@ export function createPersistedState(state: PersistedStateSource): PersistedAppS
   const settings = normalizeSettings(state.settings)
   const galleryInputDraft = saveGalleryInputDraft(state)
   return {
-    settings,
+    settings: stripSub2Keys(settings),
     previousPresetConfig: state.previousPresetConfig ?? null,
     dismissedPresetProfileIds: state.dismissedPresetProfileIds ?? [],
     dismissedPresetProviderIds: state.dismissedPresetProviderIds ?? [],
