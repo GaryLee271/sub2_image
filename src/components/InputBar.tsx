@@ -433,10 +433,7 @@ export default function InputBar() {
   const activeProvider = activeProfile.provider
   const isFalProvider = activeProvider === 'fal'
 
-  const moderationDisabled = isFalProvider
 
-  const showTransparentOutputControl = (params.output_format === 'png' || params.output_format === 'webp')
-  const transparentOutputEnabled = showTransparentOutputControl && params.transparent_output
   const compressionDisabled = params.output_format === 'png' || isFalProvider
   const outputImageLimit = getOutputImageLimitForSettings(effectiveSettings)
   const isFalTextToImage = isFalProvider && inputImages.length === 0
@@ -464,12 +461,7 @@ export default function InputBar() {
   ]
   const atImageLimit = inputImages.length >= API_MAX_IMAGES
   const uploadImageTooltipText = atImageLimit ? `参考图数量已达上限（${API_MAX_IMAGES} 张），无法继续添加` : '上传图片'
-  const transparentOutputHint = useHintTooltip()
-  const handleTransparentOutputMenuOpenChange = useCallback((open: boolean) => {
-    if (open) transparentOutputHint.hide()
-  }, [transparentOutputHint.hide])
   const compressionHint = useHintTooltip({ enabled: () => compressionDisabled })
-  const moderationHint = useHintTooltip({ enabled: () => moderationDisabled })
   const sizeHint = useHintTooltip({ enabled: () => isFalTextToImage || activeProfile.codexCli })
   const qualityHint = useHintTooltip({ enabled: () => activeProfile.codexCli || isFalProvider })
   const nLimitHint = useHintTooltip({ autoHideMs: 2000 })
@@ -1449,18 +1441,11 @@ export default function InputBar() {
       displaySize={displaySize}
       qualityOptions={qualityOptions}
       selectClass={selectClass}
-      transparentOutputAvailable={true}
-      showTransparentOutputControl={showTransparentOutputControl}
-      transparentOutputEnabled={transparentOutputEnabled}
-      transparentOutputHint={transparentOutputHint}
-      onTransparentOutputMenuOpenChange={handleTransparentOutputMenuOpenChange}
       compressionHint={compressionHint}
       compressionDisabled={compressionDisabled}
       outputCompressionInput={outputCompressionInput}
       setOutputCompressionInput={setOutputCompressionInput}
       commitOutputCompression={commitOutputCompression}
-      moderationHint={moderationHint}
-      moderationDisabled={moderationDisabled}
       outputImageLimit={outputImageLimit}
       nInput={nInput}
       setNInputFocused={setNInputFocused}
@@ -1691,7 +1676,7 @@ export default function InputBar() {
           <div className="mt-3">
             {/* 桌面端布局 */}
             <div className="hidden sm:flex items-end justify-between gap-3">
-              {renderParams('grid-cols-6')}
+              {renderParams(params.output_format === 'jpeg' ? 'grid-cols-5' : 'grid-cols-4')}
 
               <div className="flex gap-2 flex-shrink-0 mb-0.5">
                 <div

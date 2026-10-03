@@ -21,18 +21,11 @@ export default function InputParamsPanel({
   displaySize,
   qualityOptions,
   selectClass,
-  transparentOutputAvailable,
-  showTransparentOutputControl,
-  transparentOutputEnabled,
-  transparentOutputHint,
-  onTransparentOutputMenuOpenChange,
   compressionHint,
   compressionDisabled,
   outputCompressionInput,
   setOutputCompressionInput,
   commitOutputCompression,
-  moderationHint,
-  moderationDisabled,
   outputImageLimit,
   nInput,
   setNInputFocused,
@@ -57,18 +50,11 @@ export default function InputParamsPanel({
   displaySize: string
   qualityOptions: Array<{ label: string; value: string }>
   selectClass: string
-  transparentOutputAvailable: boolean
-  showTransparentOutputControl: boolean
-  transparentOutputEnabled: boolean
-  transparentOutputHint: HintTooltipState
-  onTransparentOutputMenuOpenChange: (open: boolean) => void
   compressionHint: HintTooltipState
   compressionDisabled: boolean
   outputCompressionInput: string
   setOutputCompressionInput: (value: string) => void
   commitOutputCompression: () => void
-  moderationHint: HintTooltipState
-  moderationDisabled: boolean
   outputImageLimit: number
   nInput: string
   setNInputFocused: (focused: boolean) => void
@@ -157,41 +143,7 @@ export default function InputParamsPanel({
           className={selectClass}
         />
       </label>
-      {showTransparentOutputControl && (
-        <label
-          className="relative flex flex-col gap-0.5"
-          onMouseEnter={transparentOutputHint.show}
-          onMouseLeave={transparentOutputHint.hide}
-          onTouchStart={transparentOutputHint.startTouch}
-          onTouchEnd={transparentOutputHint.clearTimer}
-          onTouchCancel={transparentOutputHint.hide}
-          onClick={transparentOutputHint.show}
-        >
-          <span className="text-gray-400 dark:text-gray-500 ml-1">透明背景</span>
-          <Select
-            value={transparentOutputEnabled ? 'on' : 'off'}
-            onChange={(val) => {
-              if (!transparentOutputAvailable) return
-              setParams({
-                transparent_output: val === 'on',
-                ...(params.output_format === 'png' ? { output_compression: null } : {}),
-              })
-            }}
-            options={[
-              { label: 'false', value: 'off' },
-              { label: 'true', value: 'on' },
-            ]}
-            showValueTooltips={false}
-            className={selectClass}
-            onOpenChange={onTransparentOutputMenuOpenChange}
-          />
-          <ButtonTooltip
-            visible={transparentOutputHint.visible}
-            text="实现方式可在设置的 API 配置中选择"
-          />
-        </label>
-      )}
-      {!showTransparentOutputControl && (
+      {params.output_format === 'jpeg' && (
         <label
           className="relative flex flex-col gap-0.5"
           onMouseEnter={compressionHint.show}
@@ -223,36 +175,6 @@ export default function InputParamsPanel({
           />
         </label>
       )}
-      <label
-        className="relative flex flex-col gap-0.5"
-        onMouseEnter={moderationHint.show}
-        onMouseLeave={moderationHint.hide}
-        onTouchStart={moderationHint.startTouch}
-        onTouchEnd={moderationHint.clearTimer}
-        onTouchCancel={moderationHint.hide}
-        onClick={moderationHint.show}
-      >
-        <span className="text-gray-400 dark:text-gray-500 ml-1">审核</span>
-        <Select
-          value={moderationDisabled ? 'auto' : params.moderation}
-          onChange={(val) => {
-            if (!moderationDisabled) setParams({ moderation: val as TaskParams['moderation'] })
-          }}
-          options={[
-            { label: 'auto', value: 'auto' },
-            { label: 'low', value: 'low' },
-          ]}
-          disabled={moderationDisabled}
-          showValueTooltips={false}
-          className={moderationDisabled
-            ? 'px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800 opacity-50 cursor-not-allowed text-xs transition-all duration-200 shadow-sm'
-            : selectClass}
-        />
-        <ButtonTooltip
-          visible={moderationDisabled && moderationHint.visible}
-          text="fal.ai 不支持审核参数"
-        />
-      </label>
       <label
         className="relative flex flex-col gap-0.5"
         onMouseEnter={() => { streamConcurrentHint.show() }}
