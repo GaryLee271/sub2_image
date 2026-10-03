@@ -13,7 +13,7 @@ export default function Header() {
 
   return (
     <>
-      <header data-no-drag-select className="safe-area-top fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-950/80 backdrop-blur border-b border-gray-200 dark:border-white/[0.08]">
+      <header data-no-drag-select className="safe-area-top fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-800/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
         <div className="safe-area-x safe-header-inner max-w-7xl mx-auto flex items-center justify-between relative">
           <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
             <div className="relative min-w-0 w-36 sm:w-56">
@@ -22,7 +22,7 @@ export default function Header() {
                 value={connection.keyId}
                 onChange={(event) => connection.selectKey(event.target.value)}
                 disabled={!connection.keys.length || connection.loading === 'keys'}
-                className="w-full appearance-none rounded-xl border border-gray-200 dark:border-white/[0.08] bg-gray-100/70 dark:bg-white/[0.04] py-2 pl-3 pr-8 text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50"
+                className="w-full appearance-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100/70 dark:bg-gray-800 py-2 pl-3 pr-8 text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50"
               >
                 <option value="" disabled>{connection.loading === 'keys' ? '加载 Key…' : '选择 Key'}</option>
                 {connection.keys.map((key) => <option key={key.id} value={key.id}>{key.name} · {key.group?.platform === 'grok' ? 'Grok' : 'OpenAI'}</option>)}
@@ -35,7 +35,7 @@ export default function Header() {
                 value={connection.model}
                 onChange={(event) => connection.selectModel(event.target.value)}
                 disabled={!connection.models.length || Boolean(connection.loading)}
-                className="w-full appearance-none rounded-xl border border-gray-200 dark:border-white/[0.08] bg-gray-100/70 dark:bg-white/[0.04] py-2 pl-3 pr-8 text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50"
+                className="w-full appearance-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100/70 dark:bg-gray-800 py-2 pl-3 pr-8 text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50"
               >
                 <option value="" disabled>{connection.loading === 'models' ? '加载模型…' : '选择模型'}</option>
                 {connection.models.map((model) => <option key={model} value={model}>{model}</option>)}

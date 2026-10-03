@@ -30,14 +30,14 @@ export default function SupportPromptModal() {
     >
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-overlay-in" />
       <div
-        className="relative z-10 w-full max-w-sm rounded-[2rem] border border-white/50 bg-white/95 p-6 pb-7 shadow-2xl ring-1 ring-black/5 animate-modal-in dark:border-white/[0.08] dark:bg-gray-900/95 dark:ring-white/10 flex flex-col"
+        className="relative z-10 w-full max-w-sm rounded-[2rem] border border-white/50 bg-white/95 p-6 pb-7 shadow-2xl ring-1 ring-black/5 animate-modal-in dark:border-gray-700 dark:bg-gray-800/95 dark:ring-white/10 flex flex-col"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="absolute right-4 top-4">
           <button
             type="button"
             onClick={dismissSupportPrompt}
-            className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-white/[0.08] dark:hover:text-gray-200"
+            className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             aria-label="关闭"
           >
             <CloseIcon className="h-5 w-5" />

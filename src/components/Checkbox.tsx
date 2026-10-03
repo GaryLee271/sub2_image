@@ -10,7 +10,7 @@ export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputE
 export function Checkbox({ checked, onChange, label, tone = 'primary', className, ...props }: CheckboxProps) {
   const toneClasses = tone === 'danger'
     ? 'border-red-300/80 hover:border-red-400/80 checked:bg-red-500/85 checked:border-transparent focus:ring-red-500/20 dark:border-red-500/30 dark:hover:border-red-500/50 dark:checked:bg-red-500/60 dark:checked:border-transparent'
-    : 'border-gray-300 hover:border-gray-400 checked:bg-blue-500 checked:border-blue-500 focus:ring-blue-500/20 dark:border-white/15 dark:hover:border-white/30 dark:checked:bg-blue-500 dark:checked:border-transparent'
+    : 'border-gray-300 hover:border-gray-400 checked:bg-blue-500 checked:border-blue-500 focus:ring-blue-500/20 dark:border-gray-700 dark:hover:border-white/30 dark:checked:bg-blue-500 dark:checked:border-transparent'
   return (
     <label className={`flex items-center gap-2.5 cursor-pointer group ${className || ''}`}>
       <div className="relative flex items-center justify-center">

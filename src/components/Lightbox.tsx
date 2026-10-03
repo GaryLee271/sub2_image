@@ -746,10 +746,10 @@ function LightboxInner({ src, imageId, maskPreviewSrc, onClose, showNav, current
 
       {/* 参考图操作 */}
       {showInputActions && !isZoomed && (
-        <div className="absolute bottom-8 left-1/2 z-10 flex w-max -translate-x-1/2 items-center gap-2 rounded-2xl bg-white/90 dark:bg-black/60 p-2 backdrop-blur-xl border border-gray-200/80 dark:border-white/15 shadow-2xl transition-colors" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute bottom-8 left-1/2 z-10 flex w-max -translate-x-1/2 items-center gap-2 rounded-2xl bg-white/90 dark:bg-black/60 p-2 backdrop-blur-xl border border-gray-200/80 dark:border-gray-700 shadow-2xl transition-colors" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-white/90 dark:hover:bg-white/15 transition active:scale-95"
+            className="flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-white/90 dark:hover:bg-gray-700 transition active:scale-95"
             onClick={onReplace}
           >
             <RefreshIcon className="w-4 h-4" />
@@ -787,7 +787,7 @@ function LightboxInner({ src, imageId, maskPreviewSrc, onClose, showNav, current
       )}
       {showNav && !isZoomed && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-none z-10">
-          <span className="px-3 py-1 bg-white/90 dark:bg-black/60 text-gray-800 dark:text-white/90 text-sm font-medium rounded-full backdrop-blur-md shadow-lg border border-gray-200/80 dark:border-white/15">
+          <span className="px-3 py-1 bg-white/90 dark:bg-black/60 text-gray-800 dark:text-white/90 text-sm font-medium rounded-full backdrop-blur-md shadow-lg border border-gray-200/80 dark:border-gray-700">
             {currentIndex + 1} / {total}
           </span>
         </div>

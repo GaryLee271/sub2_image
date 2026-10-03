@@ -7,8 +7,10 @@ import './index.css'
 import { initializeUserStorage, loadCurrentUserId, watchSub2Session } from './lib/userStorage'
 import { Sub2LoginRequiredError } from './lib/sub2Api'
 import { redirectToSub2Login } from './lib/sub2Auth'
+import { syncSub2Theme } from './lib/sub2Theme'
 import { installMobileViewportGuards } from './lib/viewport'
 
+syncSub2Theme()
 installMobileViewportGuards()
 
 if ('serviceWorker' in navigator) {

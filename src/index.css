@@ -69,23 +69,21 @@ body.drag-selecting * {
   user-select: none !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
-    --border: 240 4% 22%;
-    --input: 240 4% 22%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    --sidebar: 240 5% 12%;
-    --sidebar-foreground: 0 0% 98%;
-  }
+html.dark {
+  --background: 229 84% 5%;
+  --foreground: 210 40% 96%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --border: 215 25% 27%;
+  --input: 215 25% 27%;
+  --primary: 172 66% 50%;
+  --primary-foreground: 0 0% 100%;
+  --sidebar: 222 47% 11%;
+  --sidebar-foreground: 210 40% 96%;
+}
 
-  * {
-    scrollbar-color: #3f3f46 transparent;
-  }
+html.dark * {
+  scrollbar-color: #334155 transparent;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -103,9 +101,12 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-thumb { background: #3f3f46; }
-  ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
 @keyframes pulse-border {
@@ -165,7 +166,7 @@ input[type="number"] {
 
 .markdown-renderer :where(blockquote) {
   border-left: 3px solid rgba(59, 130, 246, 0.45);
-  color: #52525b;
+  color: #475569;
   padding-left: 0.85rem;
 }
 
@@ -205,26 +206,24 @@ input[type="number"] {
   border-radius: 0.75rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  .markdown-renderer :where(blockquote) {
-    color: #a1a1aa;
-  }
+html.dark .markdown-renderer :where(blockquote) {
+  color: #94a3b8;
+}
 
-  .markdown-renderer :where(a) {
-    color: #60a5fa;
-  }
+html.dark .markdown-renderer :where(a) {
+  color: #2dd4bf;
+}
 
-  .markdown-renderer :where(:not(pre) > code) {
-    background: rgba(255, 255, 255, 0.1);
-  }
+html.dark .markdown-renderer :where(:not(pre) > code) {
+  background: rgba(255, 255, 255, 0.1);
+}
 
-  .markdown-renderer :where(th, td) {
-    border-color: rgba(255, 255, 255, 0.12);
-  }
+html.dark .markdown-renderer :where(th, td) {
+  border-color: rgba(255, 255, 255, 0.12);
+}
 
-  .markdown-renderer :where(th) {
-    background: rgba(255, 255, 255, 0.06);
-  }
+html.dark .markdown-renderer :where(th) {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .mask-edge-r {
@@ -404,39 +403,87 @@ input[type="number"] {
   box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.25);
 }
 
-@media (prefers-color-scheme: dark) {
-  .mention-tag {
-    background: rgba(59, 130, 246, 0.12);
-    color: #93c5fd;
-    border-color: rgba(59, 130, 246, 0.2);
-  }
+html.dark .mention-tag {
+  background: rgba(20, 184, 166, 0.12);
+  color: #5eead4;
+  border-color: rgba(20, 184, 166, 0.2);
+}
 
-  .mention-tag::selection,
-  .mention-tag *::selection {
-    background: transparent !important;
-    color: inherit !important;
-  }
+html.dark .mention-tag::selection, html.dark .mention-tag *::selection {
+  background: transparent !important;
+  color: inherit !important;
+}
 
-  [contenteditable]::selection,
-  [contenteditable] *::selection {
-    background: rgba(59, 130, 246, 0.3);
-    color: inherit;
-  }
+html.dark [contenteditable]::selection, html.dark [contenteditable] *::selection {
+  background: rgba(20, 184, 166, 0.3);
+  color: inherit;
+}
 
-  .mention-tag:hover {
-    background: rgba(59, 130, 246, 0.2);
-  }
+html.dark .mention-tag:hover {
+  background: rgba(20, 184, 166, 0.2);
+}
 
-  .mention-tag.selected {
-    background: #3b82f6;
-    color: #ffffff;
-    border-color: #60a5fa;
-    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
-  }
+html.dark .mention-tag.selected {
+  background: #14b8a6;
+  color: #ffffff;
+  border-color: #2dd4bf;
+  box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.35);
 }
 
 /* 修复 iOS/Webkit 上带圆角的滚动容器内容/滚动条溢出的 bug */
 .ios-rounded-scroll-fix {
   isolation: isolate;
   -webkit-mask-image: -webkit-radial-gradient(white, black);
+}
+
+:root {
+  --gray-50: 250 250 250;
+  --gray-100: 244 244 245;
+  --gray-200: 228 228 231;
+  --gray-300: 212 212 216;
+  --gray-400: 161 161 170;
+  --gray-500: 113 113 122;
+  --gray-600: 82 82 91;
+  --gray-700: 63 63 70;
+  --gray-800: 39 39 42;
+  --gray-900: 24 24 27;
+  --gray-950: 9 9 11;
+  --blue-50: 239 246 255;
+  --blue-100: 219 234 254;
+  --blue-200: 191 219 254;
+  --blue-300: 147 197 253;
+  --blue-400: 96 165 250;
+  --blue-500: 59 130 246;
+  --blue-600: 37 99 235;
+  --blue-700: 29 78 216;
+  --blue-800: 30 64 175;
+  --blue-900: 30 58 138;
+  --blue-950: 23 37 84;
+  color-scheme: light;
+}
+
+html.dark {
+  --gray-50: 248 250 252;
+  --gray-100: 241 245 249;
+  --gray-200: 226 232 240;
+  --gray-300: 203 213 225;
+  --gray-400: 148 163 184;
+  --gray-500: 100 116 139;
+  --gray-600: 71 85 105;
+  --gray-700: 51 65 85;
+  --gray-800: 30 41 59;
+  --gray-900: 15 23 42;
+  --gray-950: 2 6 23;
+  --blue-50: 240 253 250;
+  --blue-100: 204 251 241;
+  --blue-200: 153 246 228;
+  --blue-300: 94 234 212;
+  --blue-400: 45 212 191;
+  --blue-500: 20 184 166;
+  --blue-600: 13 148 136;
+  --blue-700: 15 118 110;
+  --blue-800: 17 94 89;
+  --blue-900: 19 78 74;
+  --blue-950: 4 47 46;
+  color-scheme: dark;
 }

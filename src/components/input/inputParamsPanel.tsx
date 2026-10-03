@@ -99,7 +99,7 @@ export default function InputParamsPanel({
         <button
           type="button"
           onClick={() => { dismissAllTooltips(); onOpenSizePicker() }}
-          className="px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-white/[0.08] bg-white/50 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.06] focus:outline-none text-xs text-left transition-all duration-200 shadow-sm font-mono"
+          className="px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-gray-700 bg-white/50 dark:bg-gray-800 hover:bg-white dark:hover:bg-gray-700 focus:outline-none text-xs text-left transition-all duration-200 shadow-sm font-mono"
         >
           {displaySize}
         </button>
@@ -129,7 +129,7 @@ export default function InputParamsPanel({
           disabled={activeProfile.codexCli}
           showValueTooltips={false}
           className={activeProfile.codexCli
-            ? 'px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-white/[0.08] bg-gray-100/50 dark:bg-white/[0.05] opacity-50 cursor-not-allowed text-xs transition-all duration-200 shadow-sm'
+            ? 'px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800 opacity-50 cursor-not-allowed text-xs transition-all duration-200 shadow-sm'
             : selectClass}
         />
         <ButtonTooltip
@@ -211,10 +211,10 @@ export default function InputParamsPanel({
             min={0}
             max={100}
             placeholder="0-100"
-            className={`px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-white/[0.08] focus:outline-none text-xs transition-all duration-200 shadow-sm ${
+            className={`px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-gray-700 focus:outline-none text-xs transition-all duration-200 shadow-sm ${
               compressionDisabled
-                ? 'bg-gray-100/50 dark:bg-white/[0.05] opacity-50 cursor-not-allowed'
-                : 'bg-white/50 dark:bg-white/[0.03]'
+                ? 'bg-gray-100/50 dark:bg-gray-800 opacity-50 cursor-not-allowed'
+                : 'bg-white/50 dark:bg-gray-800'
               }`}
           />
           <ButtonTooltip
@@ -245,7 +245,7 @@ export default function InputParamsPanel({
           disabled={moderationDisabled}
           showValueTooltips={false}
           className={moderationDisabled
-            ? 'px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-white/[0.08] bg-gray-100/50 dark:bg-white/[0.05] opacity-50 cursor-not-allowed text-xs transition-all duration-200 shadow-sm'
+            ? 'px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800 opacity-50 cursor-not-allowed text-xs transition-all duration-200 shadow-sm'
             : selectClass}
         />
         <ButtonTooltip
@@ -288,8 +288,8 @@ export default function InputParamsPanel({
           type={'number'}
           min={1}
           max={outputImageLimit}
-          className={`px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-white/[0.08] focus:outline-none text-xs transition-all duration-200 shadow-sm ${
-            'bg-white/50 dark:bg-white/[0.03]'
+          className={`px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-gray-700 focus:outline-none text-xs transition-all duration-200 shadow-sm ${
+            'bg-white/50 dark:bg-gray-800'
           }`}
         />
         <ButtonTooltip visible={nLimitHint.visible} text={nLimitHintText} />

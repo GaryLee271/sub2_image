@@ -441,13 +441,13 @@ export default function DetailModal() {
       <div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-md animate-overlay-in" />
       <div
         ref={modalRef}
-        className="relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-white/50 dark:border-white/[0.08] rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgb(0,0,0,0.4)] max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row z-10 ring-1 ring-black/5 dark:ring-white/10 animate-modal-in"
+        className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-white/50 dark:border-gray-700 rounded-3xl shadow-[0_8px_40px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgb(0,0,0,0.4)] max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row z-10 ring-1 ring-black/5 dark:ring-white/10 animate-modal-in"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex h-14 items-center justify-end px-4 md:hidden">
           <button
             onClick={() => setDetailTaskId(null)}
-            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-white/[0.06] transition text-gray-400"
+            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400"
             aria-label="关闭"
           >
             <CloseIcon className="w-6 h-6" />
@@ -731,7 +731,7 @@ export default function DetailModal() {
                       copyErrorTooltip.handlers.onClick()
                       handleCopyError()
                     }}
-                    className="inline-flex items-center justify-center rounded-full border border-red-200/80 bg-white/80 px-3 py-1.5 text-red-500 transition hover:bg-red-50 dark:border-red-400/20 dark:bg-white/[0.04] dark:hover:bg-red-500/10"
+                    className="inline-flex items-center justify-center rounded-full border border-red-200/80 bg-white/80 px-3 py-1.5 text-red-500 transition hover:bg-red-50 dark:border-red-400/20 dark:bg-gray-800 dark:hover:bg-red-500/10"
                     aria-label="复制完整报错"
                   >
                     <CopyIcon className="h-4 w-4" />
@@ -815,7 +815,7 @@ export default function DetailModal() {
                       retryTooltip.handlers.onClick()
                       handleRetry()
                     }}
-                    className="inline-flex items-center justify-center rounded-full border border-blue-200/80 bg-white/80 px-3 py-1.5 text-blue-500 transition hover:bg-blue-50 dark:border-blue-400/20 dark:bg-white/[0.04] dark:hover:bg-blue-500/10"
+                    className="inline-flex items-center justify-center rounded-full border border-blue-200/80 bg-white/80 px-3 py-1.5 text-blue-500 transition hover:bg-blue-50 dark:border-blue-400/20 dark:bg-gray-800 dark:hover:bg-blue-500/10"
                     aria-label="重试任务"
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -835,7 +835,7 @@ export default function DetailModal() {
         <div className="md:w-1/2 w-full p-5 overflow-y-auto overscroll-contain flex flex-col">
           <button
             onClick={() => setDetailTaskId(null)}
-            className="absolute top-3 right-3 hidden p-1 rounded-full hover:bg-gray-100 dark:hover:bg-white/[0.06] transition text-gray-400 z-10 md:block"
+            className="absolute top-3 right-3 hidden p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition text-gray-400 z-10 md:block"
             aria-label="关闭"
           >
             <CloseIcon className="w-5 h-5" />
@@ -849,7 +849,7 @@ export default function DetailModal() {
               {task.prompt && !false && (
                 <button
                   onClick={handleCopyPrompt}
-                  className="p-1 rounded text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/[0.06] transition"
+                  className="p-1 rounded text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-700 transition"
                   title="复制提示词"
                 >
                   <CopyIcon className="h-4 w-4" />
@@ -892,7 +892,7 @@ export default function DetailModal() {
                   {allInputImageIds.length > 0 && (
                     <button
                       onClick={handleCopyInputImage}
-                      className="p-1 rounded text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/[0.06] transition"
+                      className="p-1 rounded text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-700 transition"
                       title="复制参考图"
                     >
                       <CopyIcon className="h-4 w-4" />
@@ -908,7 +908,7 @@ export default function DetailModal() {
                         <div key={imgId} className="relative group inline-block">
                           <div
                             className={`relative w-16 h-16 rounded-lg overflow-hidden border cursor-pointer hover:opacity-80 transition ${
-                              isMaskTarget ? 'border-blue-500 border-2 shadow-sm' : 'border-gray-200 dark:border-white/[0.08]'
+                              isMaskTarget ? 'border-blue-500 border-2 shadow-sm' : 'border-gray-200 dark:border-gray-700'
                             }`}
                             onClick={() => setLightboxImageId(imgId, allInputImageIds)}
                           >
@@ -940,7 +940,7 @@ export default function DetailModal() {
               参数配置
             </h3>
             {showSourceInfo && (
-              <div className="mb-2 min-w-0 overflow-hidden rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-white/[0.03]">
+              <div className="mb-2 min-w-0 overflow-hidden rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-gray-800">
                 <span className="text-gray-400 dark:text-gray-500">来源</span>
                 <br />
                 <div className="mt-0.5 overflow-x-auto hide-scrollbar whitespace-nowrap mask-edge-r pr-2">
@@ -950,21 +950,21 @@ export default function DetailModal() {
               </div>
             )}
             <div className="grid grid-cols-2 gap-2 text-xs mb-4 min-w-0">
-              <div className="bg-gray-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 min-w-0 overflow-hidden">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 min-w-0 overflow-hidden">
                 <span className="text-gray-400 dark:text-gray-500">尺寸</span>
                 <br />
                 <div className="mt-0.5 overflow-x-auto hide-scrollbar whitespace-nowrap mask-edge-r pr-2">
                   <DetailParamValue task={task} paramKey="size" className="font-medium" actualParams={currentActualParams} />
                 </div>
               </div>
-              <div className="bg-gray-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 min-w-0 overflow-hidden">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 min-w-0 overflow-hidden">
                 <span className="text-gray-400 dark:text-gray-500">质量</span>
                 <br />
                 <div className="mt-0.5 overflow-x-auto hide-scrollbar whitespace-nowrap mask-edge-r pr-2">
                   <DetailParamValue task={task} paramKey="quality" className="font-medium" actualParams={currentActualParams} />
                 </div>
               </div>
-              <div className="bg-gray-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 min-w-0 overflow-hidden">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 min-w-0 overflow-hidden">
                 <span className="text-gray-400 dark:text-gray-500">格式</span>
                 <br />
                 <div className="mt-0.5 overflow-x-auto hide-scrollbar whitespace-nowrap mask-edge-r pr-2">
@@ -972,7 +972,7 @@ export default function DetailModal() {
                 </div>
               </div>
               {supportsTransparentOutput && (
-                <div className="bg-gray-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 min-w-0 overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 min-w-0 overflow-hidden">
                   <span className="text-gray-400 dark:text-gray-500">透明背景</span>
                   <br />
                   <div className="mt-0.5 overflow-x-auto hide-scrollbar whitespace-nowrap mask-edge-r pr-2">
@@ -986,7 +986,7 @@ export default function DetailModal() {
                 </div>
               )}
               {task.params.output_format !== 'png' && (
-                <div className="bg-gray-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 min-w-0 overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 min-w-0 overflow-hidden">
                   <span className="text-gray-400 dark:text-gray-500">压缩率</span>
                   <br />
                   <div className="mt-0.5 overflow-x-auto hide-scrollbar whitespace-nowrap mask-edge-r pr-2">
@@ -994,7 +994,7 @@ export default function DetailModal() {
                   </div>
                 </div>
               )}
-              <div className="bg-gray-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 min-w-0 overflow-hidden">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 min-w-0 overflow-hidden">
                 <span className="text-gray-400 dark:text-gray-500">审核</span>
                 <br />
                 <div className="mt-0.5 overflow-x-auto hide-scrollbar whitespace-nowrap mask-edge-r pr-2">
@@ -1002,7 +1002,7 @@ export default function DetailModal() {
                 </div>
               </div>
               {(
-                <div className="bg-gray-50 dark:bg-white/[0.03] rounded-lg px-3 py-2 min-w-0 overflow-hidden">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 min-w-0 overflow-hidden">
                   <span className="text-gray-400 dark:text-gray-500">数量</span>
                   <br />
                   <div className="mt-0.5 overflow-x-auto hide-scrollbar whitespace-nowrap mask-edge-r pr-2">
@@ -1020,7 +1020,7 @@ export default function DetailModal() {
           </div>
 
           {/* 操作按钮 */}
-          <div className="grid grid-cols-4 sm:flex gap-2 pt-4 border-t border-gray-100 dark:border-white/[0.08]">
+          <div className="grid grid-cols-4 sm:flex gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
             <button
               onClick={handleReuse}
               className="col-span-2 sm:flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition text-sm font-medium whitespace-nowrap"
@@ -1050,7 +1050,7 @@ export default function DetailModal() {
               className={`col-span-1 sm:flex-none sm:w-11 w-full flex items-center justify-center rounded-xl transition ${
                 task.isFavorite
                   ? 'bg-yellow-50 text-yellow-500 hover:bg-yellow-100 dark:bg-yellow-500/10 dark:hover:bg-yellow-500/20'
-                  : 'bg-gray-50 text-gray-400 hover:bg-yellow-50 hover:text-yellow-500 dark:bg-white/[0.04] dark:hover:bg-yellow-500/10'
+                  : 'bg-gray-50 text-gray-400 hover:bg-yellow-50 hover:text-yellow-500 dark:bg-gray-800 dark:hover:bg-yellow-500/10'
               }`}
               title={task.isFavorite ? '编辑收藏夹' : '收藏任务'}
             >
@@ -1075,7 +1075,7 @@ export default function DetailModal() {
           }}
         >
           <div ref={rawUrlsModalRef} className="flex w-full max-w-2xl max-h-[90vh] flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-[#1c1c1e]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-white/[0.08] shrink-0">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700 shrink-0">
               <h3 className="text-base font-semibold text-gray-900 dark:text-white">原始图片链接 ({rawImageUrls.length})</h3>
               <div className="flex items-center gap-2">
                 <button
@@ -1088,7 +1088,7 @@ export default function DetailModal() {
                       showToast(getClipboardFailureMessage('复制失败', err), 'error')
                     }
                   }}
-                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors text-xs font-medium"
+                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-xs font-medium"
                 >
                   <CopyIcon className="w-3.5 h-3.5" />
                   全部复制
@@ -1096,7 +1096,7 @@ export default function DetailModal() {
                 <button
                   type="button"
                   onClick={() => setShowRawUrlsModal(false)}
-                  className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-white/[0.08] dark:hover:text-gray-300 transition-colors"
+                  className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
                 >
                   <CloseIcon className="w-5 h-5" />
                 </button>
@@ -1105,7 +1105,7 @@ export default function DetailModal() {
             <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 bg-gray-50/50 dark:bg-black/20 overscroll-contain">
               <div className="space-y-2.5">
                 {rawImageUrls.map((url, i) => (
-                  <div key={i} className="group flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-white dark:bg-[#1c1c1e] border border-gray-100 dark:border-white/[0.06] shadow-sm hover:shadow-md transition-all">
+                  <div key={i} className="group flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-white dark:bg-[#1c1c1e] border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all">
                     <div className="flex-1 min-w-0 flex flex-col gap-1">
                       <div className="text-xs font-medium text-gray-400 dark:text-gray-500">
                         图片 {i + 1}
@@ -1124,7 +1124,7 @@ export default function DetailModal() {
                           showToast(getClipboardFailureMessage('复制失败', err), 'error')
                         }
                       }}
-                      className="flex-shrink-0 p-2 sm:px-3 sm:py-1.5 flex items-center justify-center gap-1.5 rounded-lg bg-gray-50 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors text-xs font-medium border border-transparent dark:border-white/[0.04]"
+                      className="flex-shrink-0 p-2 sm:px-3 sm:py-1.5 flex items-center justify-center gap-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-xs font-medium border border-transparent dark:border-gray-700"
                       title="复制链接"
                     >
                       <CopyIcon className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
@@ -1158,7 +1158,7 @@ export default function DetailModal() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-white/[0.08] shrink-0">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700 shrink-0">
               <h3 className="text-base font-semibold text-gray-900 dark:text-white">原始响应数据</h3>
               <div className="flex items-center gap-2">
                 <button
@@ -1171,7 +1171,7 @@ export default function DetailModal() {
                       showToast(getClipboardFailureMessage('复制失败', err), 'error')
                     }
                   }}
-                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/[0.08] transition-colors text-xs font-medium"
+                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-xs font-medium"
                 >
                   <CopyIcon className="w-3.5 h-3.5" />
                   全部复制
@@ -1179,7 +1179,7 @@ export default function DetailModal() {
                 <button
                   type="button"
                   onClick={() => setShowRawResponseModal(false)}
-                  className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-white/[0.08] dark:hover:text-gray-300 transition-colors"
+                  className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors"
                 >
                   <CloseIcon className="w-5 h-5" />
                 </button>

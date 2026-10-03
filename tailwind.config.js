@@ -2,14 +2,15 @@ import colors from 'tailwindcss/colors';
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: 'media',
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}', './node_modules/streamdown/dist/*.js'],
   theme: {
     extend: {
       colors: {
         background: 'hsl(var(--background) / <alpha-value>)',
         border: 'hsl(var(--border) / <alpha-value>)',
-        gray: colors.zinc,
+        gray: Object.fromEntries(Object.keys(colors.zinc).map((shade) => [shade, `rgb(var(--gray-${shade}) / <alpha-value>)`])),
+        blue: Object.fromEntries(Object.keys(colors.blue).map((shade) => [shade, `rgb(var(--blue-${shade}) / <alpha-value>)`])),
         foreground: 'hsl(var(--foreground) / <alpha-value>)',
         input: 'hsl(var(--input) / <alpha-value>)',
         muted: {
