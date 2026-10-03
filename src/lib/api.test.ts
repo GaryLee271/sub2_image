@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PARAMS } from '../types'
-import { createDefaultOpenAIProfile, DEFAULT_IMAGES_MODEL, DEFAULT_SETTINGS } from './apiProfiles'
+import { DEFAULT_IMAGES_MODEL, DEFAULT_SETTINGS, createDefaultOpenAIProfile } from './apiProfiles'
 import { normalizePersistedState } from './persistedState'
 import { callImageApi } from './api'
 import { maybeAppendImageToolDroppedHint, maybeAppendStreamingHint } from './imageApiShared'
@@ -130,7 +130,6 @@ describe('callImageApi', () => {
       settings: DEFAULT_SETTINGS,
       params: DEFAULT_PARAMS,
       dismissedCodexCliPrompts: [],
-      agentConversations: [],
       favoriteCollections: [],
       defaultFavoriteCollectionId: null,
     })!
@@ -350,27 +349,6 @@ describe('callImageApi', () => {
     const body = JSON.parse(String((init as RequestInit).body))
     expect(body.size).toBeUndefined()
     expect(body.prompt).toBe('prompt')
-  })
-
-  it('does not append a size hint to Agent tool requests', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
-      data: [{ b64_json: 'aW1hZ2U=' }],
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }))
-
-    await callImageApi({
-      settings: { ...DEFAULT_SETTINGS, apiKey: 'test-key', codexCli: true, allowPromptRewrite: true },
-      prompt: 'Generate at 1024x1024 resolution. prompt',
-      params: { ...DEFAULT_PARAMS, size: '1024x1024' },
-      inputImageDataUrls: [],
-      skipCodexCliSizePrompt: true,
-    })
-
-    const [, init] = fetchMock.mock.calls[0]
-    const body = JSON.parse(String((init as RequestInit).body))
-    expect(body.prompt).toBe('Generate at 1024x1024 resolution. prompt')
   })
 
   it('records actual params returned on Images API responses in Codex CLI mode', async () => {

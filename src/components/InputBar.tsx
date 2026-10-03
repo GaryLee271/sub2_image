@@ -1,17 +1,15 @@
-import { useRef, useEffect, useCallback, useState, useMemo, useLayoutEffect } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { deleteFavoriteCollection, useStore, submitTask, submitAgentMessage, stopAgentResponse, addImageFromFile, removeMultipleTasks, taskMatchesFilterStatus, taskMatchesSearchQuery } from '../store'
+import { addImageFromFile, deleteFavoriteCollection, removeMultipleTasks, submitTask, taskMatchesFilterStatus, taskMatchesSearchQuery, useStore } from '../store'
 import { DEFAULT_PARAMS, type TaskRecord } from '../types'
-import { getActiveAgentRounds } from '../lib/agentConversationState'
-import { getActiveApiProfile, getAgentImageApiProfile, normalizeSettings } from '../lib/apiProfiles'
+import { getActiveApiProfile, normalizeSettings } from '../lib/apiProfiles'
 import { getImageGenerationModel, isGptImage25Model } from '../lib/imageModels'
 import { ensureImageCached, getCachedImage } from '../lib/imageCache'
 import { DEFAULT_FAL_IMAGE_SIZE, getChangedParams, getOutputImageLimitForSettings, normalizeParamsForSettings } from '../lib/paramCompatibility'
-import { getAtImageQuery, getImageMentionLabel, getPromptIndexFromVisibleIndex, getPromptMentionParts, getSelectedImageMentionLabel, imageMentionMatches, insertImageMentionAtVisibleRange, insertTextMentionAtVisibleRange, isCursorInSelectedImageMention, stripImageMentionMarkers } from '../lib/promptImageMentions'
+import { getAtImageQuery, getImageMentionLabel, getPromptIndexFromVisibleIndex, getPromptMentionParts, getSelectedImageMentionLabel, imageMentionMatches, insertImageMentionAtVisibleRange, isCursorInSelectedImageMention, stripImageMentionMarkers } from '../lib/promptImageMentions'
 import { normalizeCodexCliImageSize, normalizeImageSize } from '../lib/size'
 import { createMaskPreviewDataUrl } from '../lib/canvasImage'
 import { getSafeBoundingClientRect } from '../lib/domRect'
-import { collectAgentRoundOutputImageSlots } from '../lib/agentImageReferences'
 import { ALL_FAVORITES_COLLECTION_ID, getTaskFavoriteCollectionIds } from '../lib/favoriteState'
 import { getContentEditableCursor, getContentEditablePlainText, getContentEditableSelection, getMentionTagHtml, setContentEditableCursor, setContentEditableSelection, syncMentionTagSelection } from '../lib/contentEditableMentions'
 import { useHintTooltip } from '../hooks/useHintTooltip'
@@ -48,17 +46,9 @@ function useIsMobile() {
 
 type AtImageOption =
   | { type: 'input'; key: string; label: string; imageId: string; dataUrl: string; imageIndex: number }
-  | { type: 'agent-output'; key: string; label: string; imageId: string; insertText: string }
-
-function agentImageMentionMatches(query: string, label: string) {
-  const normalized = query.trim().toLowerCase()
-  if (!normalized) return true
-  const normalizedLabel = label.toLowerCase()
-  return normalizedLabel.includes(normalized) || normalizedLabel.replace(/^@/, '').includes(normalized)
-}
 
 function AtImageOptionThumb({ option }: { option: AtImageOption }) {
-  const [src, setSrc] = useState(option.type === 'input' ? option.dataUrl : getCachedImage(option.imageId) || '')
+  const [src, setSrc] = useState(option.dataUrl)
 
   useEffect(() => {
     if (option.type === 'input') {
@@ -85,7 +75,7 @@ function AtImageOptionThumb({ option }: { option: AtImageOption }) {
 
 export default function InputBar() {
   const prompt = useStore((s) => s.prompt)
-  const appMode = useStore((s) => s.appMode)
+
   const setPrompt = useStore((s) => s.setPrompt)
   const inputImages = useStore((s) => s.inputImages)
   const addInputImage = useStore((s) => s.addInputImage)
@@ -108,8 +98,7 @@ export default function InputBar() {
   const tasks = useStore((s) => s.tasks)
   const favoriteCollections = useStore((s) => s.favoriteCollections)
   const defaultFavoriteCollectionId = useStore((s) => s.defaultFavoriteCollectionId)
-  const agentConversations = useStore((s) => s.agentConversations)
-  const activeAgentConversationId = useStore((s) => s.activeAgentConversationId)
+
   const filterStatus = useStore((s) => s.filterStatus)
   const filterFavorite = useStore((s) => s.filterFavorite)
   const activeFavoriteCollectionId = useStore((s) => s.activeFavoriteCollectionId)
@@ -119,7 +108,7 @@ export default function InputBar() {
   const filteredTasks = useMemo(() => {
     const sorted = [...tasks].sort((a, b) => b.createdAt - a.createdAt)
     const q = searchQuery.trim().toLowerCase()
-    
+
     return sorted.filter((t) => {
       if (filterFavorite) {
         if (!t.isFavorite) return false
@@ -412,44 +401,25 @@ export default function InputBar() {
   const isMobile = useIsMobile()
 
   const settingsActiveProfile = useMemo(() => getActiveApiProfile(settings), [settings])
-  const currentActiveProfile = useMemo(() => (
-    appMode === 'agent'
-      ? getAgentImageApiProfile(settings) ?? settingsActiveProfile
-      : settingsActiveProfile
-  ), [appMode, settings, settingsActiveProfile])
+  const currentActiveProfile = settingsActiveProfile
   const activeProfile = useMemo(() => (
-    appMode !== 'agent' && settings.reuseTaskApiProfileTemporarily && reusedTaskApiProfileId
+    settings.reuseTaskApiProfileTemporarily && reusedTaskApiProfileId
       ? settings.profiles.find((profile) => profile.id === reusedTaskApiProfileId) ?? currentActiveProfile
       : currentActiveProfile
-  ), [appMode, currentActiveProfile, reusedTaskApiProfileId, settings])
-  const activeAgentConversation = appMode === 'agent'
-    ? agentConversations.find((conversation) => conversation.id === activeAgentConversationId) ?? null
-    : null
-  const activeAgentIsRunning = Boolean(activeAgentConversation?.rounds.some((round) => round.status === 'running'))
+  ), [currentActiveProfile, reusedTaskApiProfileId, settings])
   const effectiveSettings = useMemo(() => (
     activeProfile.id === settingsActiveProfile.id
       ? settings
       : normalizeSettings({ ...settings, activeProfileId: activeProfile.id })
   ), [activeProfile.id, settingsActiveProfile.id, settings])
   const hasSubmitApiConfig = Boolean(activeProfile.apiKey)
-  const canSubmit = Boolean(prompt.trim() && hasSubmitApiConfig && !activeAgentIsRunning)
-  const submitButtonAriaLabel = activeAgentIsRunning
-    ? '停止生成'
-    : hasSubmitApiConfig
+  const canSubmit = Boolean(prompt.trim() && hasSubmitApiConfig)
+  const submitButtonAriaLabel = hasSubmitApiConfig
     ? maskDraft ? '遮罩编辑' : '生成图像'
     : '请先配置 API'
-  const submitTooltipText = activeAgentIsRunning ? '停止生成' : '尚未完成 API 配置，请在右上角设置中进行'
+  const submitTooltipText = '尚未完成 API 配置，请在右上角设置中进行'
   const promptPlaceholder = '描述你想生成的图片，可输入 @ 来指定参考图...'
-  const submitCurrentMode = useCallback(() => {
-    if (appMode === 'agent') {
-      void submitAgentMessage()
-    } else {
-      void submitTask()
-    }
-  }, [appMode])
-  const stopActiveAgentResponse = useCallback(() => {
-    stopAgentResponse(activeAgentConversationId)
-  }, [activeAgentConversationId])
+  const submitCurrentMode = useCallback(() => { void submitTask() }, [])
   const syncPromptFromContentEditable = useCallback(() => {
     const el = textareaRef.current
     if (!el) return
@@ -461,20 +431,18 @@ export default function InputBar() {
   }, [setPrompt])
   const activeProvider = activeProfile.provider
   const isFalProvider = activeProvider === 'fal'
-  const agentAutoImageCount = appMode === 'agent'
+
   const moderationDisabled = isFalProvider
-  const transparentOutputAvailable = appMode === 'gallery'
-  const showTransparentOutputControl = transparentOutputAvailable && (params.output_format === 'png' || params.output_format === 'webp')
-  const transparentOutputEnabled = transparentOutputAvailable && showTransparentOutputControl && params.transparent_output
+
+  const showTransparentOutputControl = (params.output_format === 'png' || params.output_format === 'webp')
+  const transparentOutputEnabled = showTransparentOutputControl && params.transparent_output
   const compressionDisabled = params.output_format === 'png' || isFalProvider
   const outputImageLimit = getOutputImageLimitForSettings(effectiveSettings)
   const isFalTextToImage = isFalProvider && inputImages.length === 0
   const nDraftValue = Number(nInput)
   const effectiveNValue = Number.isNaN(nDraftValue) ? params.n : nDraftValue
-  const streamConcurrentByN = activeProfile.provider === 'openai' && activeProfile.streamImages === true && !agentAutoImageCount && effectiveNValue > 1
-  const nLimitHintText = agentAutoImageCount
-    ? 'Agent 模式下数量由模型根据提示词自动决定'
-    : isFalProvider
+  const streamConcurrentByN = activeProfile.provider === 'openai' && activeProfile.streamImages === true && effectiveNValue > 1
+  const nLimitHintText = isFalProvider
     ? `fal.ai 最大请求数量为 ${outputImageLimit}`
     : `OpenAI 最大请求数量为 ${outputImageLimit}`
   const displaySize = isFalTextToImage && params.size === 'auto'
@@ -513,23 +481,8 @@ export default function InputBar() {
     : inputImages
   const cursorPosition = cursorPos
   const visiblePrompt = stripImageMentionMarkers(prompt)
-  const agentOutputImageOptions = useMemo<AtImageOption[]>(() => {
-    if (!activeAgentConversation) return []
-    return getActiveAgentRounds(activeAgentConversation).flatMap((round) =>
-      collectAgentRoundOutputImageSlots(round, tasks).flatMap((imageId, imageIndex) => {
-        if (!imageId) return []
-        const label = `@第${round.index}轮图${imageIndex + 1}`
-        return {
-          type: 'agent-output' as const,
-          key: `agent-output:${round.id}:${imageIndex}:${imageId}`,
-          label,
-          imageId,
-          insertText: label,
-        }
-      }),
-    )
-  }, [activeAgentConversation, tasks])
-  const atImageSourceCount = inputImages.length + agentOutputImageOptions.length
+
+  const atImageSourceCount = inputImages.length
   const atImageQuery = isCursorInSelectedImageMention(prompt, cursorPosition)
     ? null
     : getAtImageQuery(visiblePrompt, cursorPosition, { length: atImageSourceCount })
@@ -545,14 +498,9 @@ export default function InputBar() {
             imageIndex: index,
           } satisfies AtImageOption))
           .filter((option) => imageMentionMatches(atImageQuery.query, option.imageIndex)),
-        ...agentOutputImageOptions.filter((option) => agentImageMentionMatches(atImageQuery.query, option.label)),
       ]
     : []
   const showAtImageMenu = !atImageMenuDismissed && atImageOptions.length > 0
-
-
-
-
 
   const selectAtImageOption = useCallback((option: AtImageOption) => {
     const el = textareaRef.current
@@ -562,7 +510,7 @@ export default function InputBar() {
     setAtImageMenuIndex(0)
     if (!query) return
 
-    const mentionText = option.type === 'input' ? getImageMentionLabel(option.imageIndex) : option.insertText
+    const mentionText = getImageMentionLabel(option.imageIndex)
     const nextCursor = query.start + mentionText.length
     if (el) {
       el.focus()
@@ -574,9 +522,7 @@ export default function InputBar() {
       }
     }
 
-    const next = option.type === 'input'
-      ? insertImageMentionAtVisibleRange(prompt, query.start, cursor, option.imageIndex)
-      : insertTextMentionAtVisibleRange(prompt, query.start, cursor, option.insertText)
+    const next = insertImageMentionAtVisibleRange(prompt, query.start, cursor, option.imageIndex)
     isUserInputRef.current = false
     setPrompt(next.prompt)
     window.setTimeout(() => {
@@ -586,8 +532,6 @@ export default function InputBar() {
       }
     }, 0)
   }, [atImageSourceCount, prompt, setPrompt, syncPromptFromContentEditable])
-
-
 
   const insertPromptTextAtSelection = useCallback((text: string) => {
     const el = textareaRef.current
@@ -631,8 +575,8 @@ export default function InputBar() {
   }, [params.output_compression])
 
   useEffect(() => {
-    setNInput(agentAutoImageCount ? 'auto' : String(params.n))
-  }, [agentAutoImageCount, params.n])
+    setNInput(String(params.n))
+  }, [params.n])
 
   useEffect(() => {
     const normalizedParams = normalizeParamsForSettings(params, effectiveSettings, { hasInputImages: inputImages.length > 0 })
@@ -688,17 +632,14 @@ export default function InputBar() {
 
   const commitN = useCallback(() => {
     nLimitHint.hide()
-    if (agentAutoImageCount) {
-      setNInput('auto')
-      return
-    }
+
     const nextValue = Number(nInput)
     const normalizedValue =
       nInput.trim() === '' ? DEFAULT_PARAMS.n : Number.isNaN(nextValue) ? params.n : nextValue
     const clampedValue = Math.min(outputImageLimit, Math.max(1, normalizedValue))
     setNInput(String(clampedValue))
     setParams({ n: clampedValue })
-  }, [agentAutoImageCount, nInput, nLimitHint, outputImageLimit, params.n, setParams])
+  }, [nInput, nLimitHint, outputImageLimit, params.n, setParams])
 
   const showNLimitHint = useCallback(() => {
     nLimitHint.show()
@@ -708,24 +649,8 @@ export default function InputBar() {
     nLimitHint.hide()
   }, [nLimitHint])
 
-  const showAgentNHint = useCallback(() => {
-    if (agentAutoImageCount) showNLimitHint()
-  }, [agentAutoImageCount, showNLimitHint])
-
-  const clearAgentNHintTouchTimer = useCallback(() => {
-    nLimitHint.clearTimer()
-  }, [nLimitHint])
-
-  const startAgentNHintTouch = useCallback(() => {
-    if (!agentAutoImageCount) return
-    nLimitHint.startTouch()
-  }, [agentAutoImageCount, nLimitHint])
-
   const handleNInputChange = useCallback((value: string) => {
-    if (agentAutoImageCount) {
-      setNInput('auto')
-      return
-    }
+
     setNInput(value)
     const nextValue = Number(value)
     if (!Number.isNaN(nextValue) && nextValue > outputImageLimit) {
@@ -733,21 +658,17 @@ export default function InputBar() {
     } else {
       hideNLimitHint()
     }
-  }, [agentAutoImageCount, hideNLimitHint, outputImageLimit, showNLimitHint])
+  }, [hideNLimitHint, outputImageLimit, showNLimitHint])
 
   const handleNLimitIncreaseAttempt = useCallback((preventDefault: () => void) => {
-    if (agentAutoImageCount) {
-      preventDefault()
-      showNLimitHint()
-      return
-    }
+
     const currentValue = Number(nInput)
     const effectiveValue = Number.isNaN(currentValue) ? params.n : currentValue
     if (!nInputFocused || effectiveValue < outputImageLimit) return
 
     preventDefault()
     showNLimitHint()
-  }, [agentAutoImageCount, nInput, nInputFocused, outputImageLimit, params.n, showNLimitHint])
+  }, [nInput, nInputFocused, outputImageLimit, params.n, showNLimitHint])
 
   const clearImageHintTimer = () => {
     if (imageHintTimerRef.current != null) {
@@ -975,11 +896,11 @@ export default function InputBar() {
       }
 
       const transferredText = e.dataTransfer?.getData('text/plain')
-      
-      const imageIds = transferredText?.startsWith('agent-images:') 
-        ? transferredText.slice('agent-images:'.length).split(',') 
-        : transferredText?.startsWith('agent-image:')
-        ? [transferredText.slice('agent-image:'.length)]
+
+      const imageIds = transferredText?.startsWith('gallery-images:')
+        ? transferredText.slice('gallery-images:'.length).split(',')
+        : transferredText?.startsWith('gallery-image:')
+        ? [transferredText.slice('gallery-image:'.length)]
         : []
 
       if (imageIds.length > 0) {
@@ -1527,7 +1448,7 @@ export default function InputBar() {
       displaySize={displaySize}
       qualityOptions={qualityOptions}
       selectClass={selectClass}
-      transparentOutputAvailable={transparentOutputAvailable}
+      transparentOutputAvailable={true}
       showTransparentOutputControl={showTransparentOutputControl}
       transparentOutputEnabled={transparentOutputEnabled}
       transparentOutputHint={transparentOutputHint}
@@ -1539,17 +1460,13 @@ export default function InputBar() {
       commitOutputCompression={commitOutputCompression}
       moderationHint={moderationHint}
       moderationDisabled={moderationDisabled}
-      agentAutoImageCount={agentAutoImageCount}
       outputImageLimit={outputImageLimit}
       nInput={nInput}
       setNInputFocused={setNInputFocused}
       commitN={commitN}
       handleNInputChange={handleNInputChange}
       handleNLimitIncreaseAttempt={handleNLimitIncreaseAttempt}
-      showAgentNHint={showAgentNHint}
       hideNLimitHint={hideNLimitHint}
-      startAgentNHintTouch={startAgentNHintTouch}
-      clearAgentNHintTouchTimer={clearAgentNHintTouchTimer}
       nLimitHint={nLimitHint}
       nLimitHintText={nLimitHintText}
       streamConcurrentByN={streamConcurrentByN}
@@ -1658,7 +1575,6 @@ export default function InputBar() {
                     >
                       <AtImageOptionThumb option={option} />
                       <span className="min-w-0 flex-1 truncate font-medium">{option.label}</span>
-                      {option.type === 'agent-output' && <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">历史</span>}
                     </button>
                   ))}
                 </div>
@@ -1802,24 +1718,18 @@ export default function InputBar() {
                   onMouseEnter={() => setSubmitHover(true)}
                   onMouseLeave={() => setSubmitHover(false)}
                 >
-                  <ButtonTooltip visible={(activeAgentIsRunning || !hasSubmitApiConfig) && submitHover} text={submitTooltipText} />
+                  <ButtonTooltip visible={(!hasSubmitApiConfig) && submitHover} text={submitTooltipText} />
                   <button
-                    onClick={() => activeAgentIsRunning ? stopActiveAgentResponse() : hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
-                    disabled={activeAgentIsRunning ? false : hasSubmitApiConfig ? !canSubmit : false}
+                    onClick={() => hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
+                    disabled={hasSubmitApiConfig ? !canSubmit : false}
                     className={`p-2.5 rounded-xl transition-all shadow-sm hover:shadow ${
-                      activeAgentIsRunning
-                        ? 'bg-red-500 text-white hover:bg-red-600'
-                        : !hasSubmitApiConfig
+                      !hasSubmitApiConfig
                         ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-pointer'
                         : 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-white/[0.04] disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                     aria-label={submitButtonAriaLabel}
                   >
-                    {activeAgentIsRunning ? (
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <rect x="7" y="7" width="10" height="10" rx="1.5" />
-                      </svg>
-                    ) : (
+                    {(
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
@@ -1909,29 +1819,23 @@ export default function InputBar() {
                   onMouseEnter={() => setSubmitHover(true)}
                   onMouseLeave={() => setSubmitHover(false)}
                 >
-                  <ButtonTooltip visible={(activeAgentIsRunning || !hasSubmitApiConfig) && submitHover} text={submitTooltipText} />
+                  <ButtonTooltip visible={(!hasSubmitApiConfig) && submitHover} text={submitTooltipText} />
                   <button
-                    onClick={() => activeAgentIsRunning ? stopActiveAgentResponse() : hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
-                    disabled={activeAgentIsRunning ? false : hasSubmitApiConfig ? !canSubmit : false}
+                    onClick={() => hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
+                    disabled={hasSubmitApiConfig ? !canSubmit : false}
                     aria-label={submitButtonAriaLabel}
                     className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
-                      activeAgentIsRunning
-                        ? 'bg-red-500 text-white hover:bg-red-600'
-                        : !hasSubmitApiConfig
+                      !hasSubmitApiConfig
                         ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-pointer'
                         : 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-white/[0.04] disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >
-                    {activeAgentIsRunning ? (
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <rect x="7" y="7" width="10" height="10" rx="1.5" />
-                      </svg>
-                    ) : (
+                    {(
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
                     )}
-                    {activeAgentIsRunning ? '停止生成' : maskDraft ? '遮罩编辑' : '生成图像'}
+                    {maskDraft ? '遮罩编辑' : '生成图像'}
                   </button>
                 </div>
               </div>

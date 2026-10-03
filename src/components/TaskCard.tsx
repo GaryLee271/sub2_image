@@ -1,11 +1,10 @@
-import { useEffect, useState, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { TaskRecord } from '../types'
-import { useStore, retryTask } from '../store'
+import { retryTask, useStore } from '../store'
 import { ensureImageThumbnailCached, subscribeImageThumbnail } from '../lib/imageCache'
 import { formatImageRatio } from '../lib/size'
-import { getParamDisplay, ActualValueBadge } from '../lib/paramDisplay'
+import { ActualValueBadge, getParamDisplay } from '../lib/paramDisplay'
 import { DEFAULT_FAL_MODEL, DEFAULT_IMAGES_MODEL } from '../lib/apiProfiles'
-import { isAgentTaskPromptPending } from '../lib/taskPromptDisplay'
 import { CodeIcon, TransparentBgIcon } from './icons'
 import ViewportTooltip from './ViewportTooltip'
 
@@ -162,7 +161,7 @@ export default function TaskCard({
     if (!touchStartRef.current) return
     const deltaX = e.touches[0].clientX - touchStartRef.current.x
     const deltaY = e.touches[0].clientY - touchStartRef.current.y
-    
+
     // 如果主要是水平滑动
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
       horizontalSwipeRef.current = true
@@ -191,7 +190,7 @@ export default function TaskCard({
     setIsSwiping(false)
     cancelSwipeFrame()
     updateSwipeDirection(0)
-    
+
     if (!touchStartRef.current) return
     const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x
     touchStartRef.current = null
@@ -315,9 +314,8 @@ export default function TaskCard({
   const showTransparentOutput = task.transparentOutput || task.params.transparent_output
 
   const nDisplay = getParamDisplay(task, 'n')
-  const isAgentTask = task.sourceMode === 'agent' || Boolean(task.agentConversationId || task.agentRoundId)
-  const showPendingPrompt = isAgentTaskPromptPending(task)
-  const showN = !isAgentTask && (task.params.n > 1 || nDisplay.isMismatch)
+
+  const showN = (task.params.n > 1 || nDisplay.isMismatch)
   const outputErrorCount = task.outputErrors?.length ?? 0
   const outputSuccessCount = task.outputImages?.length ?? 0
   const requestedOutputCount = Math.max(task.params.n, outputSuccessCount + outputErrorCount)
@@ -375,7 +373,7 @@ export default function TaskCard({
         onDragStart={(e) => {
           if (task.status !== 'done' || !task.outputImages?.length) return;
           const imageIds = task.outputImages;
-          e.dataTransfer.setData('text/plain', `agent-images:${imageIds.join(',')}`);
+          e.dataTransfer.setData('text/plain', `gallery-images:${imageIds.join(',')}`);
           e.dataTransfer.effectAllowed = 'copy';
           // Optionally set drag image if we have thumbSrc
           if (thumbSrc) {
@@ -539,20 +537,13 @@ export default function TaskCard({
         {/* 右侧信息区域 */}
         <div className="flex-1 p-3 flex flex-col min-w-0">
           <div className="flex-1 min-h-0 mb-2 overflow-hidden">
-            {showPendingPrompt ? (
-              <div className="leading-relaxed">
-                <p className="text-sm text-gray-700 dark:text-gray-300">正在生成……</p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">输入内容将在响应完成时接收</p>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3">
-                {task.prompt || '(无提示词)'}
-              </p>
-            )}
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-3">
+              {task.prompt || '(无提示词)'}
+            </p>
           </div>
           <div className="mt-auto flex flex-col gap-1.5">
             {/* 参数与信息：横向滚动 */}
-            <div 
+            <div
               data-tag-scroll-area
               className="flex overflow-x-auto hide-scrollbar pt-0.5 gap-1.5 whitespace-nowrap mask-edge-r min-w-0 pr-2"
               onTouchStart={(e) => e.stopPropagation()}
@@ -562,7 +553,7 @@ export default function TaskCard({
             >
               {/* API Name */}
               {(task.apiProfileName || task.apiProvider) && (
-                <span 
+                <span
                   className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs flex-shrink-0"
                   title={task.apiProfileName || task.apiProvider}
                 >
@@ -574,7 +565,7 @@ export default function TaskCard({
               )}
               {/* Model */}
               {showModel && (
-                <span 
+                <span
                   className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs flex-shrink-0"
                   title={task.apiModel}
                 >

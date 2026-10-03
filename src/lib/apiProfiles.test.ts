@@ -3,18 +3,18 @@ import {
   DEFAULT_FAL_BASE_URL,
   DEFAULT_FAL_MODEL,
   DEFAULT_IMAGES_MODEL,
-  DEFAULT_RESPONSES_MODEL,
   DEFAULT_OPENAI_PROFILE_ID,
+  DEFAULT_RESPONSES_MODEL,
   DEFAULT_SETTINGS,
-  createDefaultOpenAIProfile,
   createDefaultFalProfile,
-  getApiProviderLabel,
-  getActiveApiProfile,
-  getCustomProviderDefinition,
+  createDefaultOpenAIProfile,
   findEquivalentApiProfile,
+  getActiveApiProfile,
+  getApiProviderLabel,
+  getCustomProviderDefinition,
+  getDefaultApiProfileId,
   importCustomProviderDefinitionFromJson,
   importCustomProviderSettingsFromJson,
-  getDefaultApiProfileId,
   mergePresetImportedSettings as mergeDefaultImportedSettings,
   mergeImportedSettings,
   normalizeApiProfile,
@@ -1642,18 +1642,6 @@ describe('custom providers', () => {
     }).profiles[0]
 
     expect(profile.baseUrl).toBe('')
-  })
-
-  it('enables Agent submit auto scroll by default', () => {
-    expect(DEFAULT_SETTINGS.agentScrollToBottomAfterSubmit).toBe(true)
-    expect(normalizeSettings({}).agentScrollToBottomAfterSubmit).toBe(true)
-    expect(normalizeSettings({ agentScrollToBottomAfterSubmit: false }).agentScrollToBottomAfterSubmit).toBe(false)
-  })
-
-  it('enables Agent math formatting prompt by default', () => {
-    expect(DEFAULT_SETTINGS.agentMathFormattingPrompt).toBe(true)
-    expect(normalizeSettings({}).agentMathFormattingPrompt).toBe(true)
-    expect(normalizeSettings({ agentMathFormattingPrompt: false }).agentMathFormattingPrompt).toBe(false)
   })
 
   it('disables prompt rewrite allowance by default', () => {

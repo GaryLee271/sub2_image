@@ -1,4 +1,4 @@
-import type { ApiProvider, TaskParams, TaskRecord } from '../types'
+import type { ApiProvider, TaskParams, TaskRecord } from '../types';
 
 type TaskLifecyclePatch = Pick<TaskRecord, 'status' | 'error' | 'finishedAt' | 'elapsed'>
 type ActualParams = Partial<TaskParams>
@@ -65,13 +65,6 @@ export function hasActualSizeParam(params: ActualParams | undefined) {
 export function addImageSizeParam(params: ActualParams | undefined, size: ImageSize | undefined): ActualParams | undefined {
   if (hasActualSizeParam(params) || !size?.width || !size.height) return params
   return { ...(params ?? {}), size: `${size.width}x${size.height}` }
-}
-
-export function deriveAgentImageActualParams(params: ActualParams | undefined, size: ImageSize | undefined): ActualParams {
-  return {
-    ...(addImageSizeParam(hasActualParams(params) ? params : undefined, size) ?? {}),
-    n: 1,
-  }
 }
 
 export function deriveGalleryActualParams(
