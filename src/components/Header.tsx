@@ -16,7 +16,8 @@ export default function Header() {
       <header data-no-drag-select className="safe-area-top fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-800/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
         <div className="safe-area-x safe-header-inner max-w-7xl mx-auto flex items-center justify-between relative">
           <div className="flex min-w-0 flex-1 items-center gap-3 py-2">
-            <div className="min-w-0 flex-1 sm:max-w-sm">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-sm">
+              <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-300">密钥</span>
               <ConnectionSelect label="选择密钥" value={connection.keyId} onChange={connection.selectKey}
                 disabled={!connection.keys.length || connection.loading === 'keys'}
                 placeholder={connection.loading === 'keys' ? '加载密钥…' : '选择密钥'}
@@ -24,7 +25,8 @@ export default function Header() {
                   platform: key.group?.platform, group: key.group?.name, description: key.group?.description,
                   rate: key.group?.rate_multiplier, userRate: key.group?.user_rate_multiplier }))} />
             </div>
-            <div className="min-w-0 flex-1 sm:max-w-xs">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-xs">
+              <span className="shrink-0 text-sm font-medium text-gray-600 dark:text-gray-300">模型</span>
               <ConnectionSelect label="选择模型" value={connection.model} onChange={connection.selectModel}
                 disabled={!connection.models.length || Boolean(connection.loading)}
                 placeholder={connection.loading === 'models' ? '加载模型…' : '选择模型'}
