@@ -1711,10 +1711,12 @@ export async function deleteFavoriteCollection(collectionId: string, deleteTasks
   useStore.getState().showToast(`已删除收藏夹「${collection.name}」`, 'success')
 }
 
-/** 重试失败的任务：创建新任务并执行 */
+/** 使用当前选择的 Key、模型和接口配置创建重试任务 */
 export async function retryTask(task: TaskRecord) {
-  const { settings } = useStore.getState()
+  const { settings, showToast } = useStore.getState()
+  if (!isSub2Ready()) { showToast('请先选择可用的生图 Key 和模型', 'error'); return }
   const activeProfile = getActiveApiProfile(settings)
+  if (validateApiProfile(activeProfile)) { showToast('请先选择可用的生图 Key 和模型', 'error'); return }
   const normalizedParams = normalizeParamsForSettings(task.params, settings, { hasInputImages: task.inputImageIds.length > 0 })
   const shouldUseTransparentOutput = (normalizedParams.output_format === 'png' || normalizedParams.output_format === 'webp') && normalizedParams.transparent_output
   const taskParams = shouldUseTransparentOutput

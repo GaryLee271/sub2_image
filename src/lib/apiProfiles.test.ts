@@ -1669,10 +1669,10 @@ describe('custom providers', () => {
 
  it('keeps fixed gallery preferences when loading or importing settings', () => {
   expect(normalizeSettings({ enterSubmit: false, clearInputAfterSubmit: false, persistInputOnRestart: false,
-    reuseTaskApiProfileTemporarily: false, alwaysShowRetryButton: false, allowPromptRewrite: true,
+    reuseTaskApiProfileTemporarily: true, alwaysShowRetryButton: false, allowPromptRewrite: true,
     taskCompletionNotification: true, zipDownloadRoutes: ['task-selection'] })).toMatchObject({
     enterSubmit: true, clearInputAfterSubmit: true, persistInputOnRestart: true,
-    reuseTaskApiProfileTemporarily: true, alwaysShowRetryButton: true, allowPromptRewrite: false,
+    reuseTaskApiProfileTemporarily: false, alwaysShowRetryButton: true, allowPromptRewrite: false,
     taskCompletionNotification: false, zipDownloadRoutes: [],
   })
 })

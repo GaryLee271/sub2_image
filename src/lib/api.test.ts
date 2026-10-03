@@ -27,6 +27,24 @@ describe('callImageApi', () => {
     vi.useRealTimers()
   })
 
+  it.each([
+    ['gpt-image-2', false], ['gpt-image-2', true],
+    ['grok-imagine-image', false], ['grok-imagine-image', true],
+  ] as const)('routes selected model %s with reference images %s through the appropriate Images endpoint', async (model, withImage) => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => String(url).startsWith('data:')
+      ? new Response(new Blob(['image'], { type: 'image/png' }))
+      : new Response(JSON.stringify({ data: [{ b64_json: 'aW1hZ2U=' }] }), { headers: { 'Content-Type': 'application/json' } }))
+    const profile = createDefaultOpenAIProfile({ id: 'sub2-key-current', baseUrl: 'https://image.test/v1', apiKey: 'current-key', model, apiMode: 'images', apiProxy: false, streamImages: false })
+    await callImageApi({ settings: { ...DEFAULT_SETTINGS, ...profile, profiles: [profile], activeProfileId: profile.id }, prompt: 'retry', params: { ...DEFAULT_PARAMS }, inputImageDataUrls: withImage ? ['data:image/png;base64,aW1hZ2U='] : [] })
+    const [url, init] = fetchMock.mock.calls.find(([url]) => String(url).startsWith('https://image.test/'))!
+    expect(url).toBe(`https://image.test/v1/images/${withImage ? 'edits' : 'generations'}`)
+    expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer current-key')
+    if (withImage) {
+      expect((init?.body as FormData).get('model')).toBe(model)
+      expect((init?.body as FormData).getAll('image[]')).toHaveLength(1)
+    } else expect(JSON.parse(String(init?.body)).model).toBe(model)
+  })
+
   it.each([false, true])(
     'adds the prompt rewrite guard on Responses API when Codex CLI mode is %s',
     async (codexCli) => {

@@ -9,7 +9,7 @@ import { clearImages, clearTasks, commitTaskDeletion, deleteImage as deleteDbIma
 import { callImageApi } from './lib/api'
 import { getFalQueuedImageResult } from './lib/falAiImageApi'
 import { removeKeyedBackgroundFromDataUrl } from './lib/transparentImage'
-import { deleteFavoriteCollection, editOutputs, getErrorToastMessage, getPersistedState, getTaskApiProfile, initStore, removeMultipleTasks, removeTask, restoreExplicitPresetConfig, reuseConfig, submitTask, useStore } from './store'
+import { deleteFavoriteCollection, editOutputs, getErrorToastMessage, getPersistedState, getTaskApiProfile, initStore, removeMultipleTasks, removeTask, restoreExplicitPresetConfig, reuseConfig, retryTask, submitTask, useStore } from './store'
 
 vi.mock('./lib/userStorage', () => ({ userStorageKey: () => 'gpt-image-playground:user:1' }))
 vi.mock('./lib/db', () => {
@@ -1164,7 +1164,7 @@ describe('reused task API profile', () => {
     })
   })
 
-  it('reuses the task API profile temporarily without switching the active profile', async () => {
+  it('reuses task inputs with the currently selected API profile', async () => {
     await reuseConfig(task({
       apiProvider: 'fal',
       apiProfileId: falProfile.id,
@@ -1173,9 +1173,9 @@ describe('reused task API profile', () => {
 
     const state = useStore.getState()
     expect(state.settings.activeProfileId).toBe(openaiProfile.id)
-    expect(state.reusedTaskApiProfileId).toBe(falProfile.id)
-    expect(state.params).toMatchObject({ n: 4, size: '1360x1024', quality: 'high' })
-    expect(state.showToast).toHaveBeenCalledWith('已临时复用该任务的 API 配置「fal 配置」', 'success')
+    expect(state.reusedTaskApiProfileId).toBeNull()
+    expect(state.params).toMatchObject({ n: 8, size: 'auto', quality: 'auto' })
+    expect(state.showToast).toHaveBeenCalledWith('已复用配置到输入框', 'success')
   })
 
   it('keeps selected image mentions when reusing a task with different current input images', async () => {
@@ -1215,31 +1215,36 @@ describe('reused task API profile', () => {
     expect(state.reusedTaskApiProfileMissing).toBe(false)
   })
 
-  it('submits a reused Sub2API task with its original model even on the same key', async () => {
+  it('submits a reused Sub2API task with the currently selected model', async () => {
     const profile = createDefaultOpenAIProfile({ id: 'sub2-key-1', apiKey: 'test-key', model: 'gpt-image-2' })
     useStore.setState({ settings: normalizeSettings({ ...DEFAULT_SETTINGS, profiles: [profile], activeProfileId: profile.id }) })
     await reuseConfig(task({ apiProfileId: profile.id, apiModel: 'gpt-image-2.5-flare', prompt: 'original prompt' }))
-    expect(useStore.getState().reusedTaskApiModel).toBe('gpt-image-2.5-flare')
+    expect(useStore.getState().reusedTaskApiModel).toBeNull()
     await submitTask()
     await vi.waitFor(() => expect(useStore.getState().tasks[0]?.status).toBe('done'))
-    expect(useStore.getState().tasks[0]).toMatchObject({ apiProfileId: profile.id, apiModel: 'gpt-image-2.5-flare' })
+    expect(useStore.getState().tasks[0]).toMatchObject({ apiProfileId: profile.id, apiModel: 'gpt-image-2' })
     expect(useStore.getState().prompt).toBe('')
     expect(useStore.getState().inputImages).toEqual([])
   })
 
-  it('asks whether to submit with current API profile when the reused API profile is missing', async () => {
-    await reuseConfig(task({ apiProvider: 'fal', apiProfileId: 'missing-profile' }))
-
-    const state = useStore.getState()
-    expect(state.tasks).toEqual([])
-    expect(state.setConfirmDialog).toHaveBeenCalledWith(expect.objectContaining({
-      title: '找不到 API 配置',
-      message: '找不到复用任务所使用的 API 配置「未知配置」，要使用当前的 API 配置「默认」提交任务吗？',
-      confirmText: '使用当前配置提交',
-      cancelText: '放弃提交',
-    }))
-
+  it('does not require the historical key when reusing inputs', async () => {
+    await reuseConfig(task({ apiProfileId: 'missing-profile', prompt: 'reuse this' }))
+    expect(useStore.getState().prompt).toBe('reuse this')
+    expect(useStore.getState().setConfirmDialog).not.toHaveBeenCalled()
   })
+
+  it.each(['gpt-image-2', 'grok-imagine-image'])('retries using the selected key and model %s without old routing metadata', async (model) => {
+    const profile = createDefaultOpenAIProfile({ id: 'sub2-key-selected', apiKey: 'selected-key', baseUrl: 'https://image.test/v1', model, apiMode: 'images', streamImages: false })
+    useStore.setState({ settings: normalizeSettings({ ...DEFAULT_SETTINGS, profiles: [profile], activeProfileId: profile.id }) })
+    await retryTask(task({ apiProfileId: 'sub2-key-old', apiModel: model.startsWith('gpt') ? 'grok-imagine-image' : 'gpt-image-2', apiMode: 'responses', customTaskId: 'old-job', falEndpoint: 'old-endpoint' }))
+    await vi.waitFor(() => expect(useStore.getState().tasks[0]?.status).toBe('done'))
+    const retried = useStore.getState().tasks[0]
+    expect(retried).toMatchObject({ apiProfileId: profile.id, apiModel: model, apiMode: 'images' })
+    expect(retried.customTaskId).toBeUndefined()
+    expect(retried.falEndpoint).toBeUndefined()
+    expect(vi.mocked(callImageApi).mock.lastCall?.[0].settings).toMatchObject({ apiKey: 'selected-key', model, apiMode: 'images', baseUrl: 'https://image.test/v1' })
+  })
+
 })
 
 it('clears gallery masks and renumbers mentions when startup cannot restore a draft image', async () => {
