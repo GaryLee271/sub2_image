@@ -348,7 +348,7 @@ html.dark .markdown-renderer :where(th) {
 }
 
 .safe-header-inner {
-  min-height: 3.5rem;
+  min-height: 4rem;
 }
 
 @media (max-width: 640px) {

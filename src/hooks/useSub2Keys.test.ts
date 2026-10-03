@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+vi.mock('../lib/userStorage', () => ({ userStorageKey: (suffix: string) => `test-user-1:${suffix}` }))
 import { act, createElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -82,4 +83,28 @@ it('does not redirect on model key failures or temporary network errors', async 
   await act(async () => root.render(createElement(Harness)))
   expect(redirectToSub2Login).not.toHaveBeenCalled()
   expect(result.error).toContain('Key 已失效')
+})
+it('restores the selected key and model after remount without saving key secrets', async () => {
+  vi.mocked(loadImageModels).mockResolvedValue(['gpt-image-2', 'gpt-image-2.5-flare'])
+  await act(async () => root.render(createElement(Harness)))
+  await act(async () => result.selectKey('2'))
+  await act(async () => result.selectModel('gpt-image-2.5-flare'))
+  expect(JSON.parse(localStorage.getItem('test-user-1:selection')!)).toEqual({ keyId: '2', model: 'gpt-image-2.5-flare' })
+  await act(async () => root.unmount())
+  root = createRoot(document.createElement('div'))
+  await act(async () => root.render(createElement(Harness)))
+  expect(result.keyId).toBe('2')
+  expect(result.model).toBe('gpt-image-2.5-flare')
+})
+it('selects an available model when the remembered model is no longer listed', async () => {
+  localStorage.setItem('test-user-1:selection', JSON.stringify({ keyId: '2', model: 'removed-model' }))
+  await act(async () => root.render(createElement(Harness)))
+  expect(result.keyId).toBe('2')
+  expect(result.model).toBe('gpt-image-2')
+})
+it('ignores unavailable remembered keys', async () => {
+  localStorage.setItem('test-user-1:selection', JSON.stringify({ keyId: 'deleted-key', model: 'old-model' }))
+  await act(async () => root.render(createElement(Harness)))
+  expect(result.keyId).toBe('1')
+  expect(result.model).toBe('gpt-image-2')
 })

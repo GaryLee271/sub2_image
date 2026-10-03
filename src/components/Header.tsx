@@ -1,7 +1,7 @@
 import { useSub2Keys } from '../hooks/useSub2Keys'
 import { useStore } from '../store'
 import { useFavoriteCollectionTitle } from './FavoriteCollections'
-import { ChevronDownIcon } from './icons'
+import ConnectionSelect from './ConnectionSelect'
 
 export default function Header() {
 
@@ -15,32 +15,20 @@ export default function Header() {
     <>
       <header data-no-drag-select className="safe-area-top fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-800/80 backdrop-blur border-b border-gray-200 dark:border-gray-700">
         <div className="safe-area-x safe-header-inner max-w-7xl mx-auto flex items-center justify-between relative">
-          <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
-            <div className="relative min-w-0 w-36 sm:w-56">
-              <select
-                aria-label="选择 Key"
-                value={connection.keyId}
-                onChange={(event) => connection.selectKey(event.target.value)}
+          <div className="flex min-w-0 flex-1 items-center gap-3 py-2">
+            <div className="min-w-0 flex-1 sm:max-w-sm">
+              <ConnectionSelect label="选择密钥" value={connection.keyId} onChange={connection.selectKey}
                 disabled={!connection.keys.length || connection.loading === 'keys'}
-                className="w-full appearance-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100/70 dark:bg-gray-800 py-2 pl-3 pr-8 text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50"
-              >
-                <option value="" disabled>{connection.loading === 'keys' ? '加载 Key…' : '选择 Key'}</option>
-                {connection.keys.map((key) => <option key={key.id} value={key.id}>{key.name} · {key.group?.platform === 'grok' ? 'Grok' : 'OpenAI'}</option>)}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                placeholder={connection.loading === 'keys' ? '加载密钥…' : '选择密钥'}
+                options={connection.keys.map((key) => ({ value: String(key.id), label: key.name,
+                  platform: key.group?.platform, group: key.group?.name, description: key.group?.description,
+                  rate: key.group?.rate_multiplier, userRate: key.group?.user_rate_multiplier }))} />
             </div>
-            <div className="relative min-w-0 w-36 sm:w-56">
-              <select
-                aria-label="选择模型"
-                value={connection.model}
-                onChange={(event) => connection.selectModel(event.target.value)}
+            <div className="min-w-0 flex-1 sm:max-w-xs">
+              <ConnectionSelect label="选择模型" value={connection.model} onChange={connection.selectModel}
                 disabled={!connection.models.length || Boolean(connection.loading)}
-                className="w-full appearance-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-100/70 dark:bg-gray-800 py-2 pl-3 pr-8 text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50"
-              >
-                <option value="" disabled>{connection.loading === 'models' ? '加载模型…' : '选择模型'}</option>
-                {connection.models.map((model) => <option key={model} value={model}>{model}</option>)}
-              </select>
-              <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                placeholder={connection.loading === 'models' ? '加载模型…' : '选择模型'}
+                options={connection.models.map((model) => ({ value: model, label: model }))} />
             </div>
           </div>
           {showFavoriteCollectionTitle && (

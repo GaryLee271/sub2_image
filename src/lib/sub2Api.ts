@@ -8,7 +8,7 @@ export interface Sub2Key {
   quota: number
   quota_used: number
   expires_at: string | null
-  group?: { platform: string; name: string; status: string; allow_image_generation: boolean }
+  group?: { id?: number; description?: string; rate_multiplier?: number; user_rate_multiplier?: number; platform: string; name: string; status: string; allow_image_generation: boolean }
 }
 
 export function isImageKey(key: Sub2Key, now = Date.now()) {
@@ -57,6 +57,19 @@ export async function loadImageKeys(token: string, signal: AbortSignal): Promise
     pages = Number(body.data.pages ?? Math.ceil(body.data.total / body.data.page_size)) || 1
     page += 1
   } while (page <= pages)
+  try {
+    const response = await fetch('/api/v1/groups/rates', { headers: { Authorization: `Bearer ${token}` }, signal, cache: 'no-store' })
+    const body = await readResponse(response, true)
+    if (body.code === 0 && body.data) {
+      for (const key of keys) {
+        const rate = key.group?.id == null ? undefined : body.data[key.group.id]
+        if (key.group && typeof rate === 'number') key.group.user_rate_multiplier = rate
+      }
+    }
+  } catch (error) {
+    if (signal.aborted || error instanceof Sub2LoginRequiredError) throw error
+    console.warn('无法加载用户分组倍率', error)
+  }
   return keys
 }
 

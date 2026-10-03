@@ -31,10 +31,18 @@ describe('Sub2API image keys and models', () => {
   it('loads every page of the current user keys with bearer auth', async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ code: 0, data: { items: [{ ...key, group: { ...key.group!, platform: 'gemini' } }], pages: 2 } })))
       .mockResolvedValueOnce(new Response(JSON.stringify({ code: 0, data: { items: [key], pages: 2 } })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 0, data: {} })))
     vi.stubGlobal('fetch', fetcher)
     const signal = new AbortController().signal
     expect(await loadImageKeys('session-token', signal)).toEqual([key])
-    expect(fetcher).toHaveBeenLastCalledWith('/api/v1/keys?page=2&page_size=100&status=active', expect.objectContaining({ headers: { Authorization: 'Bearer session-token' }, signal }))
+    expect(fetcher).toHaveBeenNthCalledWith(2, '/api/v1/keys?page=2&page_size=100&status=active', expect.objectContaining({ headers: { Authorization: 'Bearer session-token' }, signal }))
+  })
+  it('includes the user group rate without replacing the base group rate', async () => {
+    const item = { ...key, group: { ...key.group!, id: 8, rate_multiplier: 2, description: 'image group' } }
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 0, data: { items: [item], pages: 1 } })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 0, data: { 8: 0.5 } }))))
+    expect((await loadImageKeys('session', new AbortController().signal))[0].group).toMatchObject({ rate_multiplier: 2, user_rate_multiplier: 0.5, description: 'image group' })
   })
   it('uses the selected key for its own model catalog', async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [{ id: 'gpt-image-2' }, { id: 'gpt-5' }] })))

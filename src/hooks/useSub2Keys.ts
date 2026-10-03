@@ -1,3 +1,4 @@
+import { userStorageKey } from '../lib/userStorage'
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { createDefaultOpenAIProfile, normalizeSettings } from '../lib/apiProfiles'
@@ -15,6 +16,10 @@ export function useSub2Keys() {
   const [loading, setLoading] = useState<'keys' | 'models' | null>(null)
   const [error, setError] = useState('')
   const [revision, setRevision] = useState(0)
+  const [savedSelection] = useState<{ keyId?: string; model?: string }>(() => {
+    try { return JSON.parse(localStorage.getItem(userStorageKey('selection')) ?? '{}') ?? {} }
+    catch { return {} }
+  })
 
   function clearSelection() {
     useSub2Connection.setState({ enabled: true, ready: false, token: '' })
@@ -62,7 +67,7 @@ export function useSub2Keys() {
       ] })
       setKeysToken(token)
       setKeys(items)
-      setKeyId(items[0] ? String(items[0].id) : '')
+      setKeyId(items.some((key) => String(key.id) === savedSelection.keyId) ? savedSelection.keyId! : items[0] ? String(items[0].id) : '')
       if (!items.length) setError('暂无可用于生图的 Key，请在 API Key 页面创建或选择已开启生图的 OpenAI/Grok 分组')
     }).catch((err) => {
       if (controller.signal.aborted) return
@@ -84,7 +89,7 @@ export function useSub2Keys() {
     loadImageModels(key, controller.signal).then((items) => {
       if (controller.signal.aborted) return
       setModels(items)
-      setModel(items[0] ?? '')
+      setModel(keyId === savedSelection.keyId && items.includes(savedSelection.model ?? '') ? savedSelection.model! : items[0] ?? '')
       if (!items.length) setError('这个 Key 没有可用的生图模型，请切换 Key 或联系管理员配置模型')
     }).catch((err) => {
       if (!controller.signal.aborted) setError(err.message)
@@ -108,14 +113,15 @@ export function useSub2Keys() {
       activeProfileId: profile.id, baseUrl: profile.baseUrl, apiKey: profile.apiKey, model,
       apiMode: 'images', apiProxy: false, streamImages: false, codexCli: false,
     }))
+    localStorage.setItem(userStorageKey('selection'), JSON.stringify({ keyId, model }))
     current.setReusedTaskApiProfile(null)
     useSub2Connection.setState({ enabled: true, ready: true, token })
   }, [keyId, keys, keysToken, model, models, token])
 
   return {
     keys, keyId, models, model, loading, error,
-    selectKey: (id: string) => { clearSelection(); setKeyId(id) },
-    selectModel: (value: string) => { useSub2Connection.setState({ ready: false }); setModel(value) },
+    selectKey: (id: string) => { if (id === keyId) return; clearSelection(); setKeyId(id) },
+    selectModel: (value: string) => { if (value === model) return; useSub2Connection.setState({ ready: false }); setModel(value) },
     retry: () => setRevision((value) => value + 1),
   }
 }
