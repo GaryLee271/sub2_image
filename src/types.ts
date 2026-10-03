@@ -378,36 +378,3 @@ export interface FalApiResponse {
   url?: string
   seed?: number
 }
-
-// ===== 导出数据 =====
-
-/** ZIP manifest.json 格式 */
-export interface ExportData {
-  version: number
-  exportedAt: string
-  backupPart?: {
-    id: string
-    index: number
-    total: number
-  }
-  settings?: Omit<AppSettings, 'customProviders'> & { customProviders?: CustomProviderDefinition[] }
-  tasks?: TaskRecord[]
-  favoriteCollections?: FavoriteCollection[]
-  defaultFavoriteCollectionId?: string | null
-
-  /** imageId → 图片信息 */
-  imageFiles?: Record<string, {
-    path: string
-    createdAt?: number
-    source?: 'upload' | 'generated' | 'mask'
-    width?: number
-    height?: number
-  }>
-  /** imageId → 缩略图信息 */
-  thumbnailFiles?: Record<string, {
-    path: string
-    width?: number
-    height?: number
-    thumbnailVersion?: number
-  }>
-}

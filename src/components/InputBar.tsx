@@ -86,7 +86,6 @@ export default function InputBar() {
   const setParams = useStore((s) => s.setParams)
   const settings = useStore((s) => s.settings)
   const reusedTaskApiProfileId = useStore((s) => s.reusedTaskApiProfileId)
-  const setShowSettings = useStore((s) => s.setShowSettings)
   const setLightboxImageId = useStore((s) => s.setLightboxImageId)
   const showToast = useStore((s) => s.showToast)
   const setConfirmDialog = useStore((s) => s.setConfirmDialog)
@@ -418,8 +417,8 @@ export default function InputBar() {
   const canSubmit = Boolean(prompt.trim() && hasSubmitApiConfig)
   const submitButtonAriaLabel = hasSubmitApiConfig
     ? maskDraft ? '遮罩编辑' : '生成图像'
-    : sub2.enabled ? '请选择生图 Key 和模型' : '请先配置 API'
-  const submitTooltipText = sub2.enabled ? '请在顶部选择可用的生图 Key 和模型' : '尚未完成 API 配置，请在右上角设置中进行'
+    : '请选择生图 Key 和模型'
+  const submitTooltipText = '请在顶部选择可用的生图 Key 和模型'
   const promptPlaceholder = '描述你想生成的图片，可输入 @ 来指定参考图...'
   const submitCurrentMode = useCallback(() => { void submitTask() }, [])
   const syncPromptFromContentEditable = useCallback(() => {
@@ -1722,11 +1721,11 @@ export default function InputBar() {
                 >
                   <ButtonTooltip visible={(!hasSubmitApiConfig) && submitHover} text={submitTooltipText} />
                   <button
-                    onClick={() => hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
-                    disabled={hasSubmitApiConfig ? !canSubmit : false}
+                    onClick={submitCurrentMode}
+                    disabled={!canSubmit}
                     className={`p-2.5 rounded-xl transition-all shadow-sm hover:shadow ${
                       !hasSubmitApiConfig
-                        ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-pointer'
+                        ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-not-allowed'
                         : 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-white/[0.04] disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                     aria-label={submitButtonAriaLabel}
@@ -1823,12 +1822,12 @@ export default function InputBar() {
                 >
                   <ButtonTooltip visible={(!hasSubmitApiConfig) && submitHover} text={submitTooltipText} />
                   <button
-                    onClick={() => hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
-                    disabled={hasSubmitApiConfig ? !canSubmit : false}
+                    onClick={submitCurrentMode}
+                    disabled={!canSubmit}
                     aria-label={submitButtonAriaLabel}
                     className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
                       !hasSubmitApiConfig
-                        ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-pointer'
+                        ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-not-allowed'
                         : 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-white/[0.04] disabled:opacity-50 disabled:cursor-not-allowed'
                     }`}
                   >

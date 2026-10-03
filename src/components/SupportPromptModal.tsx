@@ -10,11 +10,10 @@ export default function SupportPromptModal() {
   const confirmDialog = useStore((s) => s.confirmDialog)
   const detailTaskId = useStore((s) => s.detailTaskId)
   const lightboxImageId = useStore((s) => s.lightboxImageId)
-  const showSettings = useStore((s) => s.showSettings)
   const maskEditorImageId = useStore((s) => s.maskEditorImageId)
 
   const blockedByHigherPriorityModal = Boolean(
-    confirmDialog || detailTaskId || lightboxImageId || showSettings || maskEditorImageId,
+    confirmDialog || detailTaskId || lightboxImageId || maskEditorImageId,
   )
   const visible = supportPromptOpen && !blockedByHigherPriorityModal
 

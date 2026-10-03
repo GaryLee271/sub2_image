@@ -12,19 +12,16 @@ import type {
   MaskDraft,
   PresetConfig,
   StoredImage,
-  StoredImageThumbnail,
   TaskParams,
   TaskRecord,
 } from './types'
 import { DEFAULT_PARAMS } from './types'
-import { DEFAULT_SETTINGS, getActiveApiProfile, getCustomProviderDefinition, mergeImportedSettings, mergePresetImportedSettings, normalizeSettings, validateApiProfile } from './lib/apiProfiles'
+import { DEFAULT_SETTINGS, getActiveApiProfile, getCustomProviderDefinition, mergePresetImportedSettings, normalizeSettings, validateApiProfile } from './lib/apiProfiles'
 import { enforcePresetConfigPolicy, getPresetConfig, getPresetProfileIds, getPresetProviderIds, isPresetConfigDeletionPrevented, isPresetConfigOnlyEnabled, isPresetConfigParamsLocked, isPresetProfile, isPresetProviderDeletionPrevented } from './lib/presetConfig'
 import { dismissAllTooltips } from './lib/tooltipDismiss'
 import { remapImageMentionsForOrder, replaceImageMentionsForApi } from './lib/promptImageMentions'
 import {
-  clearImages,
   commitTaskDeletion,
-  clearTasks as dbClearTasks,
   putTask as dbPutTask,
   deleteImage,
   getAllImageIds,
@@ -47,12 +44,9 @@ import { orderInputImagesForMask } from './lib/mask'
 import { getChangedParams, normalizeParamsForSettings } from './lib/paramCompatibility'
 import { createTransparentOutputMeta, getTransparentRequestParams, removeKeyedBackgroundFromDataUrl } from './lib/transparentImage'
 import { blobToDataUrl, fileToDataUrl } from './lib/dataUrl'
-import { cacheImage, cacheThumbnail, clearImageCaches, deleteCachedImage, deleteImageCacheEntry, ensureImageCached, scheduleThumbnailBackfill } from './lib/imageCache'
-import { hasActiveDataOperations } from './lib/dataOperations'
-import { formatExportFileTime } from './lib/exportFileName'
-import { MAX_EXPORT_ZIP_BYTES, buildExportZip, createExportBlob, getExportImageEstimatedBytes, getExportZipPlan, readExportZip, readExportZipFileAsDataUrl, readExportZipManifest } from './lib/exportZip'
+import { cacheImage, cacheThumbnail, deleteCachedImage, deleteImageCacheEntry, ensureImageCached, scheduleThumbnailBackfill } from './lib/imageCache'
 import { isEmptyInputDraft, restoreGalleryInputDraftState, syncActiveInputDraft, updateInputDraftImages } from './lib/inputDraftState'
-import { ALL_FAVORITES_COLLECTION_ID, DEFAULT_FAVORITE_COLLECTION_ID, createDefaultFavoriteCollection, deleteFavoriteCollectionState, ensureDefaultFavoriteCollection, getTaskFavoriteCollectionIds, mergeFavoriteCollections, normalizeFavoriteCollectionIds, normalizeFavoriteCollectionName, normalizeFavoriteCollections, normalizeFavoritePatch, normalizeLoadedFavoriteState, resolveDefaultFavoriteCollectionId, sameFavoriteCollectionIds } from './lib/favoriteState'
+import { ALL_FAVORITES_COLLECTION_ID, DEFAULT_FAVORITE_COLLECTION_ID, createDefaultFavoriteCollection, deleteFavoriteCollectionState, ensureDefaultFavoriteCollection, getTaskFavoriteCollectionIds, normalizeFavoriteCollectionIds, normalizeFavoriteCollectionName, normalizeFavoriteCollections, normalizeFavoritePatch, normalizeLoadedFavoriteState, resolveDefaultFavoriteCollectionId, sameFavoriteCollectionIds } from './lib/favoriteState'
 import { createPersistedState, normalizePersistedState } from './lib/persistedState'
 import { addImageSizeParam, createTaskDonePatch, createTaskErrorPatch, deriveGalleryActualParams, firstActualParams, hasActualParams, hasActualSizeParam, mapActualParamsByImage, mapRevisedPromptsByImage, markInterruptedOpenAIRunningTasks } from './lib/taskState'
 import { stripInjectedCodexCliSizePrompt } from './lib/size'
@@ -91,8 +85,6 @@ function isErrorToastTitle(title: string): boolean {
   return /(?:失败|错误|异常|报错|无法|不能|超时|中断|断开|请先|请输入|已达上限|不存在|已丢失)$/.test(title)
 }
 
-export type SettingsTab = 'api' | 'data'
-
 const TIMEOUT_STREAMING_HINT = '也可尝试打开「流式传输」，并提高「请求中间步骤图像数」来维持连接。'
 const TIMEOUT_PARTIAL_IMAGES_ZERO_HINT = '官方流式接口不发送心跳，当前「请求中间步骤图像数」为 0，连接可能因无数据传输而断开。建议提高到 2 或 3。'
 const TIMEOUT_PARTIAL_IMAGES_LOW_HINT = '也可尝试提高「请求中间步骤图像数」来维持连接，避免长时间无数据传输导致断开。'
@@ -129,18 +121,6 @@ function showTaskCompletionNotification(title: string, body: string) {
 
 function countSuccessfulOutputImages(tasks: TaskRecord[]) {
   return tasks.reduce((count, task) => count + (task.status === 'done' ? task.outputImages.length : 0), 0)
-}
-
-function skipSupportPromptForImportedData(tasks: TaskRecord[]) {
-  const count = countSuccessfulOutputImages(tasks)
-  useStore.setState((state) => {
-    if (state.supportPromptDismissed) return {}
-    if (count <= SUPPORT_PROMPT_IMAGE_THRESHOLD) {
-      return { supportPromptSkippedForImportedData: false }
-    }
-    if (state.supportPromptOpen) return {}
-    return { supportPromptSkippedForImportedData: true }
-  })
 }
 
 function showSupportPromptForExistingLocalData(tasks: TaskRecord[]) {
@@ -276,9 +256,6 @@ interface AppState {
   lightboxImageId: string | null
   lightboxImageList: string[]
   setLightboxImageId: (id: string | null, list?: string[]) => void
-  showSettings: boolean
-  settingsTabRequest: SettingsTab | null
-  setShowSettings: (v: boolean, tab?: SettingsTab) => void
   supportPromptOpen: boolean
   supportPromptDismissed: boolean
   supportPromptSkippedForImportedData: boolean
@@ -685,16 +662,6 @@ export const useStore = create<AppState>()(
       setLightboxImageId: (lightboxImageId, list) => {
         if (lightboxImageId) dismissAllTooltips()
         set({ lightboxImageId, lightboxImageList: list ?? (lightboxImageId ? [lightboxImageId] : []) })
-      },
-      showSettings: false,
-      settingsTabRequest: null,
-      setShowSettings: (showSettings, settingsTabRequest) => {
-        if (showSettings) dismissAllTooltips()
-        set({
-          showSettings,
-          ...(settingsTabRequest ? { settingsTabRequest } : {}),
-          ...(!showSettings ? { settingsTabRequest: null } : {}),
-        })
       },
       supportPromptOpen: false,
       supportPromptDismissed: false,
@@ -1238,7 +1205,6 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
 
   if (validateApiProfile(activeProfile)) {
     showToast(`请先完善请求 API 配置：${validateApiProfile(activeProfile)}`, 'error')
-    useStore.getState().setShowSettings(true)
     return
   }
 
@@ -1946,49 +1912,6 @@ export async function removeTask(task: TaskRecord) {
   useStore.getState().showToast('任务已删除', 'success')
 }
 
-/** 清空数据选项 */
-export interface ClearOptions {
-  clearConfig?: boolean
-  clearTasks?: boolean
-}
-
-/** 清空数据 */
-export async function clearData(options: ClearOptions = { clearConfig: true, clearTasks: true }) {
-  const { setTasks, clearInputImages, clearMaskDraft, setSettings, setParams, showToast } = useStore.getState()
-
-  if (options.clearTasks) {
-    await dbClearTasks()
-    await clearImages()
-    clearImageCaches()
-    setTasks([])
-    useStore.setState({
-      supportPromptOpen: false,
-      supportPromptSkippedForImportedData: false,
-    })
-    clearInputImages()
-    clearMaskDraft()
-  }
-
-  if (options.clearConfig) {
-    const presetConfig = getPresetConfig()
-    useStore.setState({
-      dismissedPresetProfileIds: [],
-      dismissedPresetProviderIds: [],
-      dismissedCodexCliPrompts: [],
-      supportPromptDismissed: false,
-    })
-    if (presetConfig) {
-      useStore.setState({ settings: { ...DEFAULT_SETTINGS } })
-      await useStore.getState().setPresetImportedSettings(presetConfig)
-    } else {
-      setSettings({ ...DEFAULT_SETTINGS })
-    }
-    setParams({ ...DEFAULT_PARAMS })
-  }
-
-  showToast('所选数据已清空', 'success')
-}
-
 async function completeRecoveredCustomTask(task: TaskRecord, result: Awaited<ReturnType<typeof getCustomQueuedImageResult>>) {
   const latest = useStore.getState().tasks.find((item) => item.id === task.id)
   if (!latest || latest.status === 'done') return
@@ -2042,93 +1965,6 @@ async function recoverCustomTask(taskId: string) {
   }
 }
 
-/** 导出选项 */
-export interface ExportOptions {
-  exportConfig?: boolean
-  exportTasks?: boolean
-}
-
-/** 导出数据为 ZIP */
-export async function exportData(options: ExportOptions = { exportConfig: true, exportTasks: true }) {
-  try {
-    const state = useStore.getState()
-    if (options.exportTasks && hasActiveDataOperations(state.tasks)) throw new Error('当前有任务正在进行，请完成或停止后再导出。')
-    const tasks = options.exportTasks ? await getAllTasks() : []
-    const imageIds = options.exportTasks ? await getAllImageIds() : []
-    const { settings, favoriteCollections, defaultFavoriteCollectionId } = state
-    const exportedAt = Date.now()
-    const params = {
-      options,
-      exportedAt,
-      settings,
-      tasks,
-      imageTasks: tasks,
-      favoriteCollections,
-      defaultFavoriteCollectionId,
-    }
-    const imageSizes = []
-    for (const id of imageIds) {
-      const image = await getImage(id)
-      if (!image) continue
-      const thumbnail = await getImageThumbnail(id)
-      imageSizes.push({ id, bytes: getExportImageEstimatedBytes(image, thumbnail) })
-    }
-    const plan = getExportZipPlan(params, imageSizes)
-    const backupId = `${exportedAt}`
-
-    for (let index = 0; index < plan.length; index++) {
-      const images: StoredImage[] = []
-      const thumbnailsByImageId = new Map<string, StoredImageThumbnail>()
-      for (const id of plan[index].imageIds) {
-        const image = await getImage(id)
-        if (!image) continue
-        images.push(image)
-        const thumbnail = await getImageThumbnail(id)
-        if (!thumbnail?.thumbnailDataUrl) continue
-        thumbnailsByImageId.set(id, thumbnail)
-        cacheThumbnail(id, {
-          dataUrl: thumbnail.thumbnailDataUrl,
-          width: thumbnail.width,
-          height: thumbnail.height,
-          thumbnailVersion: thumbnail.thumbnailVersion,
-        })
-      }
-
-      const partNumber = index + 1
-      const result = await buildExportZip({
-        ...params,
-        tasks: plan[index].tasks,
-        images,
-        thumbnailsByImageId,
-        includeManifestData: plan[index].includeBaseData,
-        backupPart: plan.length > 1 ? { id: backupId, index: partNumber, total: plan.length } : undefined,
-      })
-      const blob = createExportBlob(result.bytes)
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      const suffix = plan.length > 1 ? `_${String(plan.length).padStart(2, '0')}parts_part${String(partNumber).padStart(2, '0')}` : ''
-      a.href = url
-      a.download = `gpt-image-playground-backup_${formatExportFileTime(new Date(exportedAt))}${suffix}.zip`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-      if (partNumber < plan.length) await new Promise((resolve) => setTimeout(resolve, 150))
-    }
-    useStore.getState().showToast(plan.length > 1 ? `已请求下载 ${plan.length} 个 ZIP，请确认浏览器已允许多文件下载` : '数据已导出', 'success')
-  } catch (e) {
-    console.error('exportData failed', e)
-    const detail = e instanceof Error ? e.message.trim() : String(e).trim()
-    useStore.getState().showToast(detail ? `导出失败，${detail}` : '导出失败，未知错误', 'error')
-  }
-}
-
-/** 导入选项 */
-export interface ImportOptions {
-  importConfig?: boolean
-  importTasks?: boolean
-}
-
 export async function restoreExplicitPresetConfig(ids: { providerIds: string[], profileIds: string[] }) {
   const presetProviderIds = getPresetProviderIds()
   const presetProfileIds = getPresetProfileIds()
@@ -2142,148 +1978,6 @@ export async function restoreExplicitPresetConfig(ids: { providerIds: string[], 
   const presetConfig = getPresetConfig()
   if (presetConfig) await useStore.getState().setPresetImportedSettings(presetConfig)
   return true
-}
-
-/** 导入 ZIP 数据 */
-export async function importData(input: File | File[], options: ImportOptions = { importConfig: true, importTasks: true }): Promise<boolean> {
-  try {
-    const state = useStore.getState()
-    if (options.importTasks && hasActiveDataOperations(state.tasks)) throw new Error('当前有任务正在进行，请完成或停止后再导入。')
-    const files = Array.isArray(input) ? input : [input]
-    if (!files.length) throw new Error('没有选择备份文件。')
-    if (files.some((file) => file.size >= MAX_EXPORT_ZIP_BYTES)) {
-      throw new Error('单个 ZIP 不能达到或超过 2 GB，请选择分片备份。')
-    }
-
-    const selected = [] as Array<{ file: File; manifest: Awaited<ReturnType<typeof readExportZipManifest>> }>
-    for (const file of files) {
-      const manifest = await readExportZipManifest(new Uint8Array(await file.arrayBuffer()), options.importTasks)
-      selected.push({ file, manifest })
-    }
-    const multipart = selected.some((part) => part.manifest.backupPart != null)
-    if (multipart) {
-      if (selected.some((part) => !part.manifest.backupPart)) throw new Error('不能混合选择分片备份和普通备份。')
-      const first = selected[0].manifest.backupPart!
-      const indexes = new Set(selected.map((part) => part.manifest.backupPart!.index))
-      const validSet = selected.every((part) => {
-        const backupPart = part.manifest.backupPart!
-        return backupPart.id === first.id && backupPart.total === first.total && backupPart.index >= 1 && backupPart.index <= first.total
-      })
-      if (!validSet || indexes.size !== selected.length) throw new Error('所选分片不属于同一批备份或包含重复分片。')
-      if (options.importTasks && (selected.length !== first.total || indexes.size !== first.total)) {
-        throw new Error(`分片备份不完整，请一次选择同一备份的全部 ${first.total} 个 ZIP。`)
-      }
-      selected.sort((a, b) => a.manifest.backupPart!.index - b.manifest.backupPart!.index)
-    }
-
-    const settingsManifests = selected.filter((part) => part.manifest.settings)
-    if (options.importConfig && !options.importTasks && !settingsManifests.length) throw new Error('所选备份不包含配置数据。')
-    const importedTasks = selected.flatMap((part) => part.manifest.tasks ?? [])
-    const hasTaskData = selected.some((part) => part.manifest.tasks != null || part.manifest.imageFiles != null)
-
-    const importedImageIds: string[] = []
-    if (options.importTasks && hasTaskData) {
-      for (const part of selected) {
-        const { manifest, files: zipFiles } = await readExportZip(new Uint8Array(await part.file.arrayBuffer()))
-        for (const [id, info] of Object.entries(manifest.imageFiles ?? {})) {
-          const dataUrl = readExportZipFileAsDataUrl(zipFiles, info.path)
-          if (!dataUrl) continue
-          await putImage({
-            id,
-            dataUrl,
-            createdAt: info.createdAt,
-            source: info.source,
-            width: info.width,
-            height: info.height,
-          })
-          cacheImage(id, dataUrl)
-          importedImageIds.push(id)
-        }
-
-        for (const [id, info] of Object.entries(manifest.thumbnailFiles ?? {})) {
-          const thumbnailDataUrl = readExportZipFileAsDataUrl(zipFiles, info.path)
-          if (!thumbnailDataUrl) continue
-          await putImageThumbnail({
-            id,
-            thumbnailDataUrl,
-            width: info.width,
-            height: info.height,
-            thumbnailVersion: info.thumbnailVersion,
-          })
-          cacheThumbnail(id, {
-            dataUrl: thumbnailDataUrl,
-            width: info.width,
-            height: info.height,
-            thumbnailVersion: info.thumbnailVersion,
-          })
-        }
-      }
-
-      for (const task of importedTasks) {
-        await putTask(task)
-      }
-
-      const tasks = await getAllTasks()
-      const state = useStore.getState()
-      const importedFavoriteCollections = selected.flatMap((part) => part.manifest.favoriteCollections ?? [])
-      const mergedFavorites = mergeFavoriteCollections(state.favoriteCollections, importedFavoriteCollections)
-      const favoriteCollections = mergedFavorites.collections
-      const importedDefaultFavoriteCollectionId = selected
-        .map((part) => part.manifest.defaultFavoriteCollectionId)
-        .find((id) => id != null && favoriteCollections.some((collection) => collection.id === id))
-      const defaultFavoriteCollectionId = mergedFavorites.importedCollections.length
-        ? resolveDefaultFavoriteCollectionId(favoriteCollections, importedDefaultFavoriteCollectionId)
-        : state.defaultFavoriteCollectionId
-      const normalizedFavorites = normalizeLoadedFavoriteState(tasks, favoriteCollections, defaultFavoriteCollectionId)
-      useStore.setState({
-        tasks: normalizedFavorites.tasks,
-        favoriteCollections: normalizedFavorites.collections,
-        defaultFavoriteCollectionId: normalizedFavorites.defaultFavoriteCollectionId,
-      })
-      if (normalizedFavorites.changed) await Promise.all(normalizedFavorites.tasks.map((task) => putTask(task)))
-      skipSupportPromptForImportedData(tasks)
-      scheduleThumbnailBackfill(importedImageIds)
-    }
-
-    if (options.importConfig && settingsManifests.length) {
-      const state = useStore.getState()
-      const providerIds = new Set(settingsManifests.flatMap((part) =>
-        part.manifest.settings?.customProviders?.map((provider) => provider.id) ?? [],
-      ))
-      const profileIds = new Set(settingsManifests.flatMap((part) =>
-        part.manifest.settings?.profiles.map((profile) => profile.id) ?? [],
-      ))
-      const presetProviderIds = getPresetProviderIds()
-      const presetProfileIds = getPresetProfileIds()
-      for (const id of providerIds) {
-        if (presetProviderIds.has(id)) state.restorePresetProvider(id)
-      }
-      for (const id of profileIds) {
-        if (presetProfileIds.has(id)) state.restorePresetProfile(id)
-      }
-      const current = useStore.getState()
-      const settings = settingsManifests.reduce(
-        (current, part) => mergeImportedSettings(current, part.manifest.settings, { preserveInternalIds: true }),
-        current.settings,
-      )
-      current.setSettings(settings)
-    }
-
-    let msg = '数据已成功导入'
-    if (options.importTasks && hasTaskData) {
-      msg = `已导入 ${importedTasks.length} 个任务`
-    } else if (options.importConfig && settingsManifests.length) {
-      msg = '配置已成功导入'
-    }
-
-    useStore.getState().showToast(msg, 'success')
-    return true
-  } catch (e) {
-    console.error('importData failed', e)
-    const detail = e instanceof Error ? e.message.trim() : String(e).trim()
-    useStore.getState().showToast(detail ? `导入失败，${detail}` : '导入失败，未知错误', 'error')
-    return false
-  }
 }
 
 /** 添加图片到输入（文件上传） */

@@ -1,17 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { strToU8, zipSync } from 'fflate'
 import { DEFAULT_SETTINGS, createDefaultFalProfile, createDefaultOpenAIProfile, normalizeSettings } from './lib/apiProfiles'
-import type { ExportData, StoredImage, StoredImageThumbnail, TaskRecord } from './types'
+import type { StoredImage, StoredImageThumbnail, TaskRecord } from './types'
 import { DEFAULT_PARAMS } from './types'
 import { getSelectedImageMentionLabel } from './lib/promptImageMentions'
-import { hasActiveDataOperations } from './lib/dataOperations'
 import { normalizePersistedState } from './lib/persistedState'
 import { setPresetConfig } from './lib/presetConfig'
 import { clearImages, clearTasks, commitTaskDeletion, deleteImage as deleteDbImage, deleteTask as deleteDbTask, getAllImageIds, getAllTasks, getImage, getStoredFreshImageThumbnail, putTask as putDbTask, putImage, putImageThumbnail } from './lib/db'
 import { callImageApi } from './lib/api'
 import { getFalQueuedImageResult } from './lib/falAiImageApi'
 import { removeKeyedBackgroundFromDataUrl } from './lib/transparentImage'
-import { clearData, deleteFavoriteCollection, editOutputs, getErrorToastMessage, getPersistedState, getTaskApiProfile, importData, initStore, removeMultipleTasks, removeTask, restoreExplicitPresetConfig, reuseConfig, submitTask, useStore } from './store'
+import { deleteFavoriteCollection, editOutputs, getErrorToastMessage, getPersistedState, getTaskApiProfile, initStore, removeMultipleTasks, removeTask, restoreExplicitPresetConfig, reuseConfig, submitTask, useStore } from './store'
 
 vi.mock('./lib/userStorage', () => ({ userStorageKey: () => 'gpt-image-playground:user:1' }))
 vi.mock('./lib/db', () => {
@@ -152,20 +150,6 @@ function deferred<T>() {
   return { promise, resolve, reject }
 }
 
-function importFile(data: ExportData, files: Record<string, Uint8Array> = {}): File {
-  const zipped = zipSync({ ...files, 'manifest.json': strToU8(JSON.stringify(data)) })
-  const buffer = zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.byteLength)
-  return { name: 'backup.zip', size: zipped.byteLength, arrayBuffer: async () => buffer.slice(0) } as File
-}
-
-describe('data operation locking', () => {
-  it('detects running and recoverable work before import or export', () => {
-    expect(hasActiveDataOperations([task({ status: 'running' })])).toBe(true)
-    expect(hasActiveDataOperations([task({ falRecoverable: true })])).toBe(true)
-    expect(hasActiveDataOperations([task()])).toBe(false)
-  })
-})
-
 describe('favorite collection deletion', () => {
   const collectionA = { id: 'collection-a', name: '收藏夹 A', createdAt: 1, updatedAt: 1 }
   const collectionB = { id: 'collection-b', name: '收藏夹 B', createdAt: 1, updatedAt: 1 }
@@ -237,7 +221,7 @@ describe('mask draft lifecycle in store actions', () => {
       detailTaskId: null,
       lightboxImageId: null,
       lightboxImageList: [],
-      showSettings: false,
+
       toast: null,
       confirmDialog: null,
       showToast: vi.fn(),
@@ -695,38 +679,6 @@ describe('preset deletion state', () => {
     expect(state.previousPresetConfig).toBeNull()
   })
 
-  it('clearData clears both dismissal lists and reapplies the current preset', async () => {
-    const provider = { id: 'preset-provider', name: 'Preset Provider', submit: { path: 'generate' } }
-    const profile = createDefaultOpenAIProfile({
-      id: 'preset-profile',
-      isDefault: true,
-      provider: provider.id,
-      model: 'preset-model',
-    })
-    const preset = { customProviders: [provider], profiles: [profile] }
-    setPresetConfig(preset)
-    useStore.setState({
-      settings: normalizeSettings({
-        ...DEFAULT_SETTINGS,
-        customProviders: [],
-        profiles: [createDefaultFalProfile({ id: 'user-profile' })],
-        activeProfileId: 'user-profile',
-      }),
-      dismissedPresetProfileIds: [profile.id],
-      dismissedPresetProviderIds: [provider.id],
-      dismissedCodexCliPrompts: ['prompt-a'],
-    })
-
-    await clearData({ clearConfig: true, clearTasks: false })
-
-    const state = useStore.getState()
-    expect(state.dismissedPresetProfileIds).toEqual([])
-    expect(state.dismissedPresetProviderIds).toEqual([])
-    expect(state.dismissedCodexCliPrompts).toEqual([])
-    expect(state.settings.customProviders).toEqual([expect.objectContaining({ id: provider.id })])
-    expect(state.settings.profiles).toEqual([expect.objectContaining({ id: profile.id, provider: provider.id })])
-  })
-
   it('restores an explicitly reimported preset provider', () => {
     const provider = { id: 'preset-provider', name: 'Preset Provider', submit: { path: 'generate' } }
     const profile = createDefaultOpenAIProfile({ id: 'preset-profile', provider: provider.id })
@@ -846,300 +798,6 @@ describe('fal task recovery', () => {
     const originalImage = await getImage(recovered!.transparentOriginalImages![0])
     expect(outputImage?.dataUrl).toBe('transparent:data:image/png;base64,fal-recovered')
     expect(originalImage?.dataUrl).toBe('data:image/png;base64,fal-recovered')
-  })
-
-})
-
-describe('data import', () => {
-  beforeEach(async () => {
-    useStore.setState({
-      tasks: [],
-      showToast: vi.fn(),
-    })
-  })
-
-  it('restores favorite collections and default collection when importing task data', async () => {
-    await clearTasks()
-    const importedCollections = [
-      { id: 'imported-collection-a', name: '导入收藏夹 A', createdAt: 1, updatedAt: 1 },
-      { id: 'imported-collection-b', name: '导入收藏夹 B', createdAt: 2, updatedAt: 2 },
-    ]
-    const importedTask = task({
-      id: 'imported-favorite-task',
-      isFavorite: true,
-      favoriteCollectionIds: [importedCollections[1].id],
-    })
-
-    const imported = await importData(importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      tasks: [importedTask],
-      favoriteCollections: importedCollections,
-      defaultFavoriteCollectionId: importedCollections[1].id,
-      imageFiles: {},
-    }), { importConfig: false, importTasks: true })
-
-    const state = useStore.getState()
-    expect(imported).toBe(true)
-    expect(state.favoriteCollections).toEqual(expect.arrayContaining(importedCollections))
-    expect(state.defaultFavoriteCollectionId).toBe(importedCollections[1].id)
-    expect(state.tasks.find((item) => item.id === importedTask.id)).toMatchObject({
-      favoriteCollectionIds: [importedCollections[1].id],
-      isFavorite: true,
-    })
-    expect((await getAllTasks()).find((item) => item.id === importedTask.id)).toMatchObject({
-      favoriteCollectionIds: [importedCollections[1].id],
-      isFavorite: true,
-    })
-  })
-
-  it('imports a complete multipart backup selected in any order', async () => {
-    await clearTasks()
-    await clearImages()
-    const importedTask = task({ id: 'multipart-task', outputImages: ['multipart-image-a', 'multipart-image-b'] })
-    const part1 = importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      backupPart: { id: 'backup-a', index: 1, total: 2 },
-      tasks: [importedTask],
-      favoriteCollections: [],
-      imageFiles: { 'multipart-image-a': { path: 'images/image-a.png' } },
-    }, { 'images/image-a.png': new Uint8Array([1, 2]) })
-    const part2 = importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      backupPart: { id: 'backup-a', index: 2, total: 2 },
-      tasks: [task({ id: 'multipart-task-2' })],
-      imageFiles: { 'multipart-image-b': { path: 'images/image-b.png' } },
-    }, { 'images/image-b.png': new Uint8Array([3, 4]) })
-
-    const imported = await importData([part2, part1], { importConfig: false, importTasks: true })
-
-    expect(imported).toBe(true)
-    expect((await getAllTasks()).some((item) => item.id === importedTask.id)).toBe(true)
-    expect((await getAllTasks()).some((item) => item.id === 'multipart-task-2')).toBe(true)
-    expect(await getImage('multipart-image-a')).toMatchObject({ dataUrl: 'data:image/png;base64,AQI=' })
-    expect(await getImage('multipart-image-b')).toMatchObject({ dataUrl: 'data:image/png;base64,AwQ=' })
-  })
-
-  it('imports multiple regular backups together', async () => {
-    await clearTasks()
-    await clearImages()
-    const sharedCollection = { id: 'regular-collection-shared', name: '共享收藏夹', createdAt: 1, updatedAt: 1 }
-    const collectionA = { id: 'regular-collection-a', name: '普通备份 A', createdAt: 1, updatedAt: 1 }
-    const collectionB = { id: 'regular-collection-b', name: '普通备份 B', createdAt: 2, updatedAt: 2 }
-    const sharedTask = task({ id: 'regular-task-shared', outputImages: ['regular-image-shared'] })
-    const backupA = importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      tasks: [sharedTask, task({ id: 'regular-task-a', outputImages: ['regular-image-a'], favoriteCollectionIds: [collectionA.id], isFavorite: true })],
-      favoriteCollections: [sharedCollection, collectionA],
-      defaultFavoriteCollectionId: collectionA.id,
-      imageFiles: {
-        'regular-image-shared': { path: 'images/shared.png' },
-        'regular-image-a': { path: 'images/image-a.png' },
-      },
-    }, {
-      'images/shared.png': new Uint8Array([5, 6]),
-      'images/image-a.png': new Uint8Array([1, 2]),
-    })
-    const backupB = importFile({
-      version: 3,
-      exportedAt: new Date(1).toISOString(),
-      tasks: [sharedTask, task({ id: 'regular-task-b', outputImages: ['regular-image-b'], favoriteCollectionIds: [collectionB.id], isFavorite: true })],
-      favoriteCollections: [sharedCollection, collectionB],
-      defaultFavoriteCollectionId: collectionB.id,
-      imageFiles: {
-        'regular-image-shared': { path: 'images/shared.png' },
-        'regular-image-b': { path: 'images/image-b.png' },
-      },
-    }, {
-      'images/shared.png': new Uint8Array([5, 6]),
-      'images/image-b.png': new Uint8Array([3, 4]),
-    })
-
-    const imported = await importData([backupA, backupB], { importConfig: false, importTasks: true })
-
-    const state = useStore.getState()
-    const taskIds = (await getAllTasks()).map((item) => item.id)
-    const collectionIds = state.favoriteCollections.map((collection) => collection.id)
-    expect(imported).toBe(true)
-    expect(taskIds).toEqual(expect.arrayContaining(['regular-task-shared', 'regular-task-a', 'regular-task-b']))
-    expect(taskIds.filter((id) => id === sharedTask.id)).toHaveLength(1)
-    expect(await getImage('regular-image-shared')).toMatchObject({ dataUrl: 'data:image/png;base64,BQY=' })
-    expect(await getImage('regular-image-a')).toMatchObject({ dataUrl: 'data:image/png;base64,AQI=' })
-    expect(await getImage('regular-image-b')).toMatchObject({ dataUrl: 'data:image/png;base64,AwQ=' })
-    expect(collectionIds).toEqual(expect.arrayContaining([sharedCollection.id, collectionA.id, collectionB.id]))
-    expect(collectionIds.filter((id) => id === sharedCollection.id)).toHaveLength(1)
-  })
-
-  it('deduplicates shared config when merging multiple regular backups', async () => {
-    const sharedProfile = createDefaultOpenAIProfile({ id: 'regular-profile-shared', name: '共享配置', apiKey: 'shared-key' })
-    const profileA = createDefaultOpenAIProfile({ id: 'regular-profile-a', name: '普通配置 A', apiKey: 'key-a' })
-    const profileB = createDefaultOpenAIProfile({ id: 'regular-profile-b', name: '普通配置 B', apiKey: 'key-b' })
-    const backupA = importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      settings: normalizeSettings({ ...DEFAULT_SETTINGS, profiles: [sharedProfile, profileA], activeProfileId: profileA.id }),
-    })
-    const backupB = importFile({
-      version: 3,
-      exportedAt: new Date(1).toISOString(),
-      settings: normalizeSettings({ ...DEFAULT_SETTINGS, profiles: [sharedProfile, profileB], activeProfileId: profileB.id }),
-    })
-
-    const imported = await importData([backupA, backupB], { importConfig: true, importTasks: false })
-
-    const apiKeys = useStore.getState().settings.profiles.map((profile) => profile.apiKey)
-    expect(imported).toBe(true)
-    expect(apiKeys).toEqual(expect.arrayContaining(['shared-key', 'key-a', 'key-b']))
-    expect(apiKeys.filter((apiKey) => apiKey === 'shared-key')).toHaveLength(1)
-  })
-
-  it('preserves internal IDs when restoring config', async () => {
-    const provider = {
-      id: 'backup-provider-id',
-      name: 'Backup Provider',
-      submit: { path: 'v1/generate' },
-    }
-    const profile = createDefaultOpenAIProfile({
-      id: 'backup-profile-id',
-      isDefault: true,
-      provider: provider.id,
-      model: 'model-v1',
-    })
-    useStore.setState({ settings: DEFAULT_SETTINGS })
-
-    const imported = await importData(importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      settings: normalizeSettings({ ...DEFAULT_SETTINGS, customProviders: [provider], profiles: [profile], activeProfileId: profile.id }),
-    }), { importConfig: true, importTasks: false })
-    await useStore.getState().setPresetImportedSettings({
-      customProviders: [{ id: provider.id, name: 'Backup Provider', submit: { path: 'v2/generate' } }],
-      profiles: [{ ...profile, provider: provider.id, model: 'model-v2' }],
-    })
-
-    const settings = useStore.getState().settings
-    expect(imported).toBe(true)
-    expect(settings.customProviders[0]).toMatchObject({ id: provider.id })
-    expect(settings.profiles[0]).toMatchObject({ id: profile.id })
-  })
-
-  it('restores dismissed preset provider and profile IDs explicitly included in a backup', async () => {
-    const provider = { id: 'preset-provider', name: 'Preset Provider', submit: { path: 'generate' } }
-    const profile = createDefaultOpenAIProfile({ id: 'preset-profile', provider: provider.id })
-    const otherProfile = createDefaultOpenAIProfile({ id: 'other-preset-profile' })
-    setPresetConfig({ customProviders: [provider], profiles: [profile, otherProfile] })
-    useStore.setState({
-      settings: normalizeSettings({
-        ...DEFAULT_SETTINGS,
-        customProviders: [],
-        profiles: [{ ...profile, provider: 'openai' }],
-      }),
-      dismissedPresetProviderIds: [provider.id],
-      dismissedPresetProfileIds: [profile.id, 'other-preset-profile'],
-    })
-
-    try {
-      const imported = await importData(importFile({
-        version: 3,
-        exportedAt: new Date(0).toISOString(),
-        settings: normalizeSettings({
-          ...DEFAULT_SETTINGS,
-          customProviders: [provider],
-          profiles: [profile],
-          activeProfileId: profile.id,
-        }),
-      }), { importConfig: true, importTasks: false })
-
-      expect(imported).toBe(true)
-      expect(useStore.getState().dismissedPresetProviderIds).toEqual([])
-      expect(useStore.getState().dismissedPresetProfileIds).toEqual(['other-preset-profile'])
-      expect(useStore.getState().settings.customProviders).toEqual([expect.objectContaining({ id: provider.id })])
-      expect(useStore.getState().settings.profiles[0].provider).toBe(provider.id)
-    } finally {
-      setPresetConfig(null)
-    }
-  })
-
-  it('preserves imported task references when restoring config into a non-empty workspace', async () => {
-    await clearTasks()
-    const localProfile = createDefaultFalProfile({ id: 'local-profile', apiKey: 'local-key' })
-    const provider = { id: 'backup-provider', name: 'Backup Provider', submit: { path: 'generate' } }
-    const profile = createDefaultOpenAIProfile({ id: 'backup-profile', provider: provider.id, apiKey: 'backup-key' })
-    const importedTask = task({ id: 'backup-task', apiProfileId: profile.id, apiProvider: provider.id })
-    useStore.setState({
-      settings: normalizeSettings({ ...DEFAULT_SETTINGS, profiles: [localProfile], activeProfileId: localProfile.id }),
-      tasks: [],
-    })
-
-    const imported = await importData(importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      settings: normalizeSettings({ ...DEFAULT_SETTINGS, customProviders: [provider], profiles: [profile], activeProfileId: profile.id }),
-      tasks: [importedTask],
-      imageFiles: {},
-    }), { importConfig: true, importTasks: true })
-
-    const state = useStore.getState()
-    expect(imported).toBe(true)
-    expect(state.settings.profiles.map((item) => item.id)).toEqual(expect.arrayContaining([localProfile.id, profile.id]))
-    expect(getTaskApiProfile(state.settings, state.tasks.find((item) => item.id === importedTask.id)!)).toMatchObject({ id: profile.id, provider: provider.id })
-  })
-
-  it('rejects an incomplete multipart backup before importing data', async () => {
-    await clearTasks()
-    const part1 = importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      backupPart: { id: 'backup-a', index: 1, total: 2 },
-      tasks: [task({ id: 'incomplete-task' })],
-      imageFiles: {},
-    })
-
-    const imported = await importData([part1], { importConfig: false, importTasks: true })
-
-    expect(imported).toBe(false)
-    expect((await getAllTasks()).some((item) => item.id === 'incomplete-task')).toBe(false)
-  })
-
-  it('validates image entries in every part before writing earlier parts', async () => {
-    await clearImages()
-    const part1 = importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      backupPart: { id: 'backup-a', index: 1, total: 2 },
-      tasks: [],
-      imageFiles: { 'preflight-image-a': { path: 'images/image-a.png' } },
-    }, { 'images/image-a.png': new Uint8Array([1, 2]) })
-    const part2 = importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      backupPart: { id: 'backup-a', index: 2, total: 2 },
-      imageFiles: { 'preflight-image-b': { path: 'images/missing.png' } },
-    })
-
-    const imported = await importData([part1, part2], { importConfig: false, importTasks: true })
-
-    expect(imported).toBe(false)
-    expect(await getImage('preflight-image-a')).toBeUndefined()
-  })
-
-  it('imports config with running tasks without requiring image parts', async () => {
-    useStore.setState({ tasks: [task({ status: 'running' })] })
-    const part1 = importFile({
-      version: 3,
-      exportedAt: new Date(0).toISOString(),
-      backupPart: { id: 'config-backup', index: 1, total: 3 },
-      settings: DEFAULT_SETTINGS,
-      tasks: [],
-      imageFiles: { 'unused-image': { path: 'images/missing.png' } },
-    })
-
-    const imported = await importData([part1], { importConfig: true, importTasks: false })
-
-    expect(imported).toBe(true)
   })
 
 })
@@ -1424,7 +1082,7 @@ describe('reused task API profile', () => {
       maskDraft: null,
       params: { ...DEFAULT_PARAMS },
       tasks: [],
-      showSettings: false,
+
       toast: null,
       reusedTaskApiProfileId: null,
       reusedTaskApiProfileName: null,
@@ -1580,7 +1238,7 @@ describe('reused task API profile', () => {
       confirmText: '使用当前配置提交',
       cancelText: '放弃提交',
     }))
-    expect(state.showSettings).toBe(false)
+
   })
 })
 

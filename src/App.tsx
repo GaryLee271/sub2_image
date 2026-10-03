@@ -12,7 +12,6 @@ import TaskGrid from './components/TaskGrid'
 import InputBar from './components/InputBar'
 import DetailModal from './components/DetailModal'
 import Lightbox from './components/Lightbox'
-import SettingsModal from './components/SettingsModal'
 import ConfirmDialog from './components/ConfirmDialog'
 import Toast from './components/Toast'
 import MaskEditorModal from './components/MaskEditorModal'
@@ -138,7 +137,6 @@ export default function App() {
       <InputBar />
       <DetailModal />
       <Lightbox />
-      <SettingsModal />
       <ConfirmDialog />
       <SupportPromptModal />
       <FavoriteCollectionPickerModal />

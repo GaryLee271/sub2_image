@@ -1,18 +1,14 @@
 import { useSub2Keys } from '../hooks/useSub2Keys'
 import { useStore } from '../store'
-import { useTooltip } from '../hooks/useTooltip'
-import ViewportTooltip from './ViewportTooltip'
 import { useFavoriteCollectionTitle } from './FavoriteCollections'
-import { ChevronDownIcon, SettingsIcon } from './icons'
+import { ChevronDownIcon } from './icons'
 
 export default function Header() {
-  const setShowSettings = useStore((s) => s.setShowSettings)
 
   const activeFavoriteCollectionId = useStore((s) => s.activeFavoriteCollectionId)
 
   const favoriteCollectionTitle = useFavoriteCollectionTitle()
   const showFavoriteCollectionTitle = Boolean(activeFavoriteCollectionId)
-  const settingsTooltip = useTooltip()
   const connection = useSub2Keys()
 
   return (
@@ -54,23 +50,6 @@ export default function Header() {
               </div>
             </div>
           )}
-          <div className="flex items-center gap-1 shrink-0">
-            <div
-              className="relative"
-              {...settingsTooltip.handlers}
-            >
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-                aria-label="设置"
-              >
-                <SettingsIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              </button>
-              <ViewportTooltip visible={settingsTooltip.visible} className="whitespace-nowrap">
-                设置
-              </ViewportTooltip>
-            </div>
-          </div>
         </div>
       </header>
       <div className="safe-area-top invisible pointer-events-none" aria-hidden="true">
