@@ -21,11 +21,6 @@ export default function InputParamsPanel({
   displaySize,
   qualityOptions,
   selectClass,
-  compressionHint,
-  compressionDisabled,
-  outputCompressionInput,
-  setOutputCompressionInput,
-  commitOutputCompression,
   outputImageLimit,
   nInput,
   setNInputFocused,
@@ -50,11 +45,6 @@ export default function InputParamsPanel({
   displaySize: string
   qualityOptions: Array<{ label: string; value: string }>
   selectClass: string
-  compressionHint: HintTooltipState
-  compressionDisabled: boolean
-  outputCompressionInput: string
-  setOutputCompressionInput: (value: string) => void
-  commitOutputCompression: () => void
   outputImageLimit: number
   nInput: string
   setNInputFocused: (focused: boolean) => void
@@ -123,58 +113,6 @@ export default function InputParamsPanel({
           text={isFalProvider ? <>fal.ai 不支持 <code className="rounded bg-white/10 px-1 py-0.5 font-mono">auto</code> 质量参数</> : 'Codex CLI 不支持质量参数'}
         />
       </label>
-      <label className="flex flex-col gap-0.5">
-        <span className="text-gray-400 dark:text-gray-500 ml-1">格式</span>
-        <Select
-          value={params.output_format}
-          onChange={(val) => {
-            setParams({
-              output_format: val as TaskParams['output_format'],
-              ...(val === 'png' ? { output_compression: null } : {}),
-              ...(val === 'jpeg' ? { transparent_output: false } : {}),
-            })
-          }}
-          options={[
-            { label: 'PNG', value: 'png' },
-            { label: 'JPEG', value: 'jpeg' },
-            { label: 'WebP', value: 'webp' },
-          ]}
-          showValueTooltips={false}
-          className={selectClass}
-        />
-      </label>
-      {params.output_format === 'jpeg' && (
-        <label
-          className="relative flex flex-col gap-0.5"
-          onMouseEnter={compressionHint.show}
-          onMouseLeave={compressionHint.hide}
-          onTouchStart={compressionHint.startTouch}
-          onTouchEnd={compressionHint.clearTimer}
-          onTouchCancel={compressionHint.hide}
-          onClick={compressionHint.show}
-        >
-          <span className="text-gray-400 dark:text-gray-500 ml-1">压缩率</span>
-          <input
-            value={outputCompressionInput}
-            onChange={(e) => setOutputCompressionInput(e.target.value)}
-            onBlur={commitOutputCompression}
-            disabled={compressionDisabled}
-            type="number"
-            min={0}
-            max={100}
-            placeholder="0-100"
-            className={`px-3 py-1.5 rounded-xl border border-gray-200/60 dark:border-gray-700 focus:outline-none text-xs transition-all duration-200 shadow-sm ${
-              compressionDisabled
-                ? 'bg-gray-100/50 dark:bg-gray-800 opacity-50 cursor-not-allowed'
-                : 'bg-white/50 dark:bg-gray-800'
-              }`}
-          />
-          <ButtonTooltip
-            visible={compressionHint.visible}
-            text={isFalProvider ? 'fal.ai 不支持压缩率参数' : '仅 JPEG 和 WebP 支持压缩率'}
-          />
-        </label>
-      )}
       <label
         className="relative flex flex-col gap-0.5"
         onMouseEnter={() => { streamConcurrentHint.show() }}

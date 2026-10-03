@@ -392,9 +392,6 @@ export default function InputBar() {
     }
   }, [promptExpanded])
   const imageHintTimerRef = useRef<number | null>(null)
-  const [outputCompressionInput, setOutputCompressionInput] = useState(
-    params.output_compression == null ? '' : String(params.output_compression),
-  )
   const [nInput, setNInput] = useState(String(params.n))
   const [nInputFocused, setNInputFocused] = useState(false)
   const dragCounter = useRef(0)
@@ -434,7 +431,6 @@ export default function InputBar() {
   const isFalProvider = activeProvider === 'fal'
 
 
-  const compressionDisabled = params.output_format === 'png' || isFalProvider
   const outputImageLimit = getOutputImageLimitForSettings(effectiveSettings)
   const isFalTextToImage = isFalProvider && inputImages.length === 0
   const nDraftValue = Number(nInput)
@@ -461,7 +457,6 @@ export default function InputBar() {
   ]
   const atImageLimit = inputImages.length >= API_MAX_IMAGES
   const uploadImageTooltipText = atImageLimit ? `参考图数量已达上限（${API_MAX_IMAGES} 张），无法继续添加` : '上传图片'
-  const compressionHint = useHintTooltip({ enabled: () => compressionDisabled })
   const sizeHint = useHintTooltip({ enabled: () => isFalTextToImage || activeProfile.codexCli })
   const qualityHint = useHintTooltip({ enabled: () => activeProfile.codexCli || isFalProvider })
   const nLimitHint = useHintTooltip({ autoHideMs: 2000 })
@@ -562,12 +557,6 @@ export default function InputBar() {
   }, [setPrompt])
 
   useEffect(() => {
-    setOutputCompressionInput(
-      params.output_compression == null ? '' : String(params.output_compression),
-    )
-  }, [params.output_compression])
-
-  useEffect(() => {
     setNInput(String(params.n))
   }, [params.n])
 
@@ -605,23 +594,6 @@ export default function InputBar() {
       cancelled = true
     }
   }, [maskDraft, maskTargetImage?.id, maskTargetImage?.dataUrl])
-
-  const commitOutputCompression = useCallback(() => {
-    if (outputCompressionInput.trim() === '') {
-      setOutputCompressionInput('')
-      setParams({ output_compression: null })
-      return
-    }
-
-    const nextValue = Number(outputCompressionInput)
-    if (Number.isNaN(nextValue)) {
-      setOutputCompressionInput(params.output_compression == null ? '' : String(params.output_compression))
-      return
-    }
-
-    setOutputCompressionInput(String(nextValue))
-    setParams({ output_compression: nextValue })
-  }, [outputCompressionInput, params.output_compression, setParams])
 
   const commitN = useCallback(() => {
     nLimitHint.hide()
@@ -1441,11 +1413,6 @@ export default function InputBar() {
       displaySize={displaySize}
       qualityOptions={qualityOptions}
       selectClass={selectClass}
-      compressionHint={compressionHint}
-      compressionDisabled={compressionDisabled}
-      outputCompressionInput={outputCompressionInput}
-      setOutputCompressionInput={setOutputCompressionInput}
-      commitOutputCompression={commitOutputCompression}
       outputImageLimit={outputImageLimit}
       nInput={nInput}
       setNInputFocused={setNInputFocused}
@@ -1676,7 +1643,7 @@ export default function InputBar() {
           <div className="mt-3">
             {/* 桌面端布局 */}
             <div className="hidden sm:flex items-end justify-between gap-3">
-              {renderParams(params.output_format === 'jpeg' ? 'grid-cols-5' : 'grid-cols-4')}
+              {renderParams('grid-cols-3')}
 
               <div className="flex gap-2 flex-shrink-0 mb-0.5">
                 <div
@@ -1729,7 +1696,7 @@ export default function InputBar() {
             <div className="sm:hidden flex flex-col gap-2">
               <div className={`collapse-section${mobileCollapsed ? ' collapsed' : ''}`}>
                 <div className="collapse-inner">
-                  {renderParams('grid-cols-2')}
+                  {renderParams('grid-cols-3')}
                   <div className="h-2" />
                 </div>
               </div>

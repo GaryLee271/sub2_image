@@ -24,6 +24,11 @@ export function normalizeParamsForSettings(
     n: Math.min(outputImageLimit, Math.max(1, params.n || DEFAULT_PARAMS.n)),
   }
 
+  if (activeProfile.id.startsWith('sub2-key-')) {
+    nextParams.output_format = 'png'
+    nextParams.output_compression = null
+  }
+
   if (isOpenAICompatibleProvider(settings, activeProfile.provider) && activeProfile.codexCli) {
     nextParams.size = normalizeCodexCliImageSize(nextParams.size)
     nextParams.quality = DEFAULT_PARAMS.quality
