@@ -91,7 +91,7 @@ function isErrorToastTitle(title: string): boolean {
   return /(?:失败|错误|异常|报错|无法|不能|超时|中断|断开|请先|请输入|已达上限|不存在|已丢失)$/.test(title)
 }
 
-export type SettingsTab = 'general' | 'api' | 'data' | 'about'
+export type SettingsTab = 'api' | 'data'
 
 const TIMEOUT_STREAMING_HINT = '也可尝试打开「流式传输」，并提高「请求中间步骤图像数」来维持连接。'
 const TIMEOUT_PARTIAL_IMAGES_ZERO_HINT = '官方流式接口不发送心跳，当前「请求中间步骤图像数」为 0，连接可能因无数据传输而断开。建议提高到 2 或 3。'
@@ -229,8 +229,9 @@ interface AppState {
   setParams: (p: Partial<TaskParams>) => void
   reusedTaskApiProfileId: string | null
   reusedTaskApiProfileName: string | null
+  reusedTaskApiModel: string | null
   reusedTaskApiProfileMissing: boolean
-  setReusedTaskApiProfile: (profileId: string | null, missing?: boolean, profileName?: string | null) => void
+  setReusedTaskApiProfile: (profileId: string | null, missing?: boolean, profileName?: string | null, model?: string | null) => void
 
   // 任务列表
   tasks: TaskRecord[]
@@ -432,7 +433,7 @@ export const useStore = create<AppState>()(
         return {
           settings,
           ...(shouldClearReusedProfile
-            ? { reusedTaskApiProfileId: null, reusedTaskApiProfileName: null, reusedTaskApiProfileMissing: false }
+            ? { reusedTaskApiProfileId: null, reusedTaskApiProfileName: null, reusedTaskApiModel: null, reusedTaskApiProfileMissing: false }
             : {}),
         }
       }),
@@ -467,7 +468,7 @@ export const useStore = create<AppState>()(
             dismissedPresetProviderIds,
             reusedTaskApiProfileId: shouldClearReusedProfile ? null : state.reusedTaskApiProfileId,
             ...(shouldClearReusedProfile
-              ? { reusedTaskApiProfileName: null, reusedTaskApiProfileMissing: false }
+              ? { reusedTaskApiProfileName: null, reusedTaskApiModel: null, reusedTaskApiProfileMissing: false }
               : {}),
           }
         })
@@ -565,8 +566,10 @@ export const useStore = create<AppState>()(
       setParams: (p) => set((s) => ({ params: { ...s.params, ...p } })),
       reusedTaskApiProfileId: null,
       reusedTaskApiProfileName: null,
+      reusedTaskApiModel: null,
       reusedTaskApiProfileMissing: false,
-      setReusedTaskApiProfile: (profileId, missing = false, profileName = null) => set({
+      setReusedTaskApiProfile: (profileId, missing = false, profileName = null, model = null) => set({
+        reusedTaskApiModel: model,
         reusedTaskApiProfileId: profileId,
         reusedTaskApiProfileName: profileName,
         reusedTaskApiProfileMissing: missing,
@@ -1203,7 +1206,7 @@ export async function initStore() {
 
 /** 提交新任务 */
 export async function submitTask(options: { allowFullMask?: boolean; useCurrentApiProfileWhenReusedMissing?: boolean } = {}) {
-  const { settings, prompt, inputImages, maskDraft, params, reusedTaskApiProfileId, reusedTaskApiProfileName, reusedTaskApiProfileMissing, showToast, setConfirmDialog } =
+  const { settings, prompt, inputImages, maskDraft, params, reusedTaskApiModel, reusedTaskApiProfileId, reusedTaskApiProfileName, reusedTaskApiProfileMissing, showToast, setConfirmDialog } =
     useStore.getState()
 
   if (!isSub2Ready()) { showToast('请先登录并选择可用的生图 Key 和模型', 'error'); return }
@@ -1228,8 +1231,8 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
         return
       }
     } else {
-      activeProfile = reusedProfile
-      requestSettings = createSettingsForApiProfile(normalizedSettings, reusedProfile)
+      activeProfile = { ...reusedProfile, model: reusedTaskApiModel || reusedProfile.model }
+      requestSettings = createSettingsForApiProfile(normalizedSettings, activeProfile)
     }
   }
 
@@ -1791,7 +1794,7 @@ export async function reuseConfig(task: TaskRecord) {
   const currentProfile = getActiveApiProfile(settings)
   const taskProfile = normalizedSettings.reuseTaskApiProfileTemporarily ? getTaskApiProfile(normalizedSettings, task) : null
   const matchedProfile = taskProfile && (!isPresetConfigOnlyEnabled() || isPresetProfile(taskProfile.id)) ? taskProfile : null
-  const shouldTemporarilyReuseProfile = Boolean(matchedProfile && matchedProfile.id !== currentProfile.id)
+  const shouldTemporarilyReuseProfile = Boolean(matchedProfile)
   const missingReusedProfile = normalizedSettings.reuseTaskApiProfileTemporarily && !matchedProfile
   const taskProfileName = matchedProfile?.name ?? getTaskApiProfileName(task)
   const paramsSettings = shouldTemporarilyReuseProfile && matchedProfile ? createSettingsForApiProfile(normalizedSettings, matchedProfile) : normalizedSettings
@@ -1801,6 +1804,7 @@ export async function reuseConfig(task: TaskRecord) {
     shouldTemporarilyReuseProfile && matchedProfile ? matchedProfile.id : null,
     missingReusedProfile,
     taskProfileName,
+    matchedProfile?.model,
   )
   clearMaskDraft()
 

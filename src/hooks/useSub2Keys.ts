@@ -52,6 +52,14 @@ export function useSub2Keys() {
     setLoading('keys')
     loadImageKeys(token, controller.signal).then((items) => {
       if (controller.signal.aborted) return
+      const state = useStore.getState()
+      state.setSettings({ ...state.settings, profiles: [
+        ...state.settings.profiles.filter((profile) => !profile.id.startsWith('sub2-key-')),
+        ...items.map((key) => createDefaultOpenAIProfile({
+          id: `sub2-key-${key.id}`, name: key.name, baseUrl: `${window.location.origin}/v1`,
+          apiKey: key.key, apiMode: 'images', apiProxy: false, streamImages: false, codexCli: false,
+        })),
+      ] })
       setKeysToken(token)
       setKeys(items)
       setKeyId(items[0] ? String(items[0].id) : '')
@@ -99,7 +107,6 @@ export function useSub2Keys() {
       profiles: [...current.settings.profiles.filter((item) => item.id !== profile.id), profile],
       activeProfileId: profile.id, baseUrl: profile.baseUrl, apiKey: profile.apiKey, model,
       apiMode: 'images', apiProxy: false, streamImages: false, codexCli: false,
-      reuseTaskApiProfileTemporarily: false,
     }))
     current.setReusedTaskApiProfile(null)
     useSub2Connection.setState({ enabled: true, ready: true, token })

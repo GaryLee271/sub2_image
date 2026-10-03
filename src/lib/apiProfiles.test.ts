@@ -1647,7 +1647,7 @@ describe('custom providers', () => {
   it('disables prompt rewrite allowance by default', () => {
     expect(DEFAULT_SETTINGS.allowPromptRewrite).toBe(false)
     expect(normalizeSettings({}).allowPromptRewrite).toBe(false)
-    expect(normalizeSettings({ allowPromptRewrite: true }).allowPromptRewrite).toBe(true)
+    expect(normalizeSettings({ allowPromptRewrite: true }).allowPromptRewrite).toBe(false)
   })
 
   it('restores OpenAI-compatible URL after switching through fal.ai', () => {
@@ -1664,5 +1664,15 @@ describe('custom providers', () => {
     expect(restoredProfile.baseUrl).toBe('https://api.compat.example.com/v1')
     expect(restoredProfile.model).toBe('custom-openai-model')
     expect(restoredProfile.apiProxy).toBe(false)
+  })
+})
+
+ it('keeps fixed gallery preferences when loading or importing settings', () => {
+  expect(normalizeSettings({ enterSubmit: false, clearInputAfterSubmit: false, persistInputOnRestart: false,
+    reuseTaskApiProfileTemporarily: false, alwaysShowRetryButton: false, allowPromptRewrite: true,
+    taskCompletionNotification: true, zipDownloadRoutes: ['task-selection'] })).toMatchObject({
+    enterSubmit: true, clearInputAfterSubmit: true, persistInputOnRestart: true,
+    reuseTaskApiProfileTemporarily: true, alwaysShowRetryButton: true, allowPromptRewrite: false,
+    taskCompletionNotification: false, zipDownloadRoutes: [],
   })
 })

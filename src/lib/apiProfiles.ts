@@ -13,7 +13,7 @@ import type {
   CustomProviderTemplate,
   PresetConfig,
 } from '../types'
-import { DEFAULT_STREAM_PARTIAL_IMAGES, DEFAULT_ZIP_DOWNLOAD_ROUTES, ZIP_DOWNLOAD_ROUTE_VALUES } from '../types'
+import { DEFAULT_STREAM_PARTIAL_IMAGES, DEFAULT_ZIP_DOWNLOAD_ROUTES } from '../types'
 import { customProviderSupportsNativeTransparentBackground } from './customProviderCapabilities'
 import { shouldUseApiProxy } from './devProxy'
 import { normalizeReasoningEffort, normalizeStreamPartialImages, parseDefaultApiUrl } from './defaultApiUrl'
@@ -115,12 +115,6 @@ export function getDefaultApiProfileId(settings: Partial<AppSettings> | unknown)
   const marked = profiles.find((profile) => profile.isDefault === true && typeof profile.id === 'string')
   if (marked && typeof marked.id === 'string') return marked.id
   return null
-}
-
-function normalizeZipDownloadRoutes(value: unknown) {
-  if (!Array.isArray(value)) return [...DEFAULT_ZIP_DOWNLOAD_ROUTES]
-  const allowed = new Set<string>(ZIP_DOWNLOAD_ROUTE_VALUES)
-  return value.filter((item): item is typeof ZIP_DOWNLOAD_ROUTE_VALUES[number] => typeof item === 'string' && allowed.has(item))
 }
 
 function normalizeProviderOrder(value: unknown, customProviders: CustomProviderDefinition[]): string[] | undefined {
@@ -693,14 +687,14 @@ export function normalizeSettings(input: Partial<AppSettings> | unknown): AppSet
     streamPartialImages: active.streamPartialImages,
     customProviders,
     providerOrder: normalizeProviderOrder(record.providerOrder, customProviders),
-    clearInputAfterSubmit: typeof record.clearInputAfterSubmit === 'boolean' ? record.clearInputAfterSubmit : false,
-    persistInputOnRestart: typeof record.persistInputOnRestart === 'boolean' ? record.persistInputOnRestart : true,
-    reuseTaskApiProfileTemporarily: typeof record.reuseTaskApiProfileTemporarily === 'boolean' ? record.reuseTaskApiProfileTemporarily : false,
-    alwaysShowRetryButton: typeof record.alwaysShowRetryButton === 'boolean' ? record.alwaysShowRetryButton : false,
-    allowPromptRewrite: typeof record.allowPromptRewrite === 'boolean' ? record.allowPromptRewrite : false,
-    taskCompletionNotification: typeof record.taskCompletionNotification === 'boolean' ? record.taskCompletionNotification : false,
-    enterSubmit: typeof record.enterSubmit === 'boolean' ? record.enterSubmit : false,
-    zipDownloadRoutes: normalizeZipDownloadRoutes(record.zipDownloadRoutes),
+    clearInputAfterSubmit: true,
+    persistInputOnRestart: true,
+    reuseTaskApiProfileTemporarily: true,
+    alwaysShowRetryButton: true,
+    allowPromptRewrite: false,
+    taskCompletionNotification: false,
+    enterSubmit: true,
+    zipDownloadRoutes: [...DEFAULT_ZIP_DOWNLOAD_ROUTES],
     profiles,
     activeProfileId,
   }
@@ -1198,12 +1192,12 @@ export const DEFAULT_SETTINGS: AppSettings = normalizeSettings({
   streamImages: DEFAULT_API_URL_PATCH?.streamImages ?? getDefaultStreamImages('openai', DEFAULT_API_URL_PATCH?.apiMode ?? 'images'),
   streamPartialImages: DEFAULT_API_URL_PATCH?.streamPartialImages ?? DEFAULT_STREAM_PARTIAL_IMAGES,
   customProviders: [],
-  clearInputAfterSubmit: false,
+  clearInputAfterSubmit: true,
   persistInputOnRestart: true,
-  reuseTaskApiProfileTemporarily: false,
-  alwaysShowRetryButton: false,
+  reuseTaskApiProfileTemporarily: true,
+  alwaysShowRetryButton: true,
   allowPromptRewrite: false,
   taskCompletionNotification: false,
-  enterSubmit: false,
+  enterSubmit: true,
   zipDownloadRoutes: DEFAULT_ZIP_DOWNLOAD_ROUTES,
 })

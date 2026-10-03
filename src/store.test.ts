@@ -615,26 +615,6 @@ describe('input persistence setting', () => {
     expect(persisted.inputImages).toEqual([{ id: imageA.id, dataUrl: '' }])
   })
 
-  it('omits input when restart input restore is disabled', () => {
-    useStore.setState({
-      settings: { ...DEFAULT_SETTINGS, persistInputOnRestart: false },
-      prompt: '不应持久化的输入',
-      inputImages: [imageA],
-      galleryInputDraft: {
-        prompt: '不应持久化的画廊草稿',
-        inputImages: [imageA],
-        maskDraft: null,
-        maskEditorImageId: null,
-      },
-    })
-
-    const persisted = getPersistedState(useStore.getState())
-
-    expect(persisted).not.toHaveProperty('prompt')
-    expect(persisted).not.toHaveProperty('inputImages')
-    expect(persisted.galleryInputDraft).toBeNull()
-  })
-
   it('writes empty input when persisted input is cleared', () => {
     useStore.setState({ prompt: '', inputImages: [] })
 
@@ -1577,24 +1557,16 @@ describe('reused task API profile', () => {
     expect(state.reusedTaskApiProfileMissing).toBe(false)
   })
 
-  it('normalizes reused params to the current API profile when temporary reuse is disabled', async () => {
-    useStore.setState({
-      settings: normalizeSettings({
-        ...useStore.getState().settings,
-        reuseTaskApiProfileTemporarily: false,
-      }),
-    })
-
-    await reuseConfig(task({
-      apiProvider: 'fal',
-      apiProfileId: falProfile.id,
-      params: { ...DEFAULT_PARAMS, n: 8, size: 'auto', quality: 'auto' },
-    }))
-
-    const state = useStore.getState()
-    expect(state.settings.activeProfileId).toBe(openaiProfile.id)
-    expect(state.reusedTaskApiProfileId).toBeNull()
-    expect(state.params).toMatchObject({ n: 8, size: 'auto', quality: 'auto' })
+  it('submits a reused Sub2API task with its original model even on the same key', async () => {
+    const profile = createDefaultOpenAIProfile({ id: 'sub2-key-1', apiKey: 'test-key', model: 'gpt-image-2' })
+    useStore.setState({ settings: normalizeSettings({ ...DEFAULT_SETTINGS, profiles: [profile], activeProfileId: profile.id }) })
+    await reuseConfig(task({ apiProfileId: profile.id, apiModel: 'gpt-image-2.5-flare', prompt: 'original prompt' }))
+    expect(useStore.getState().reusedTaskApiModel).toBe('gpt-image-2.5-flare')
+    await submitTask()
+    await vi.waitFor(() => expect(useStore.getState().tasks[0]?.status).toBe('done'))
+    expect(useStore.getState().tasks[0]).toMatchObject({ apiProfileId: profile.id, apiModel: 'gpt-image-2.5-flare' })
+    expect(useStore.getState().prompt).toBe('')
+    expect(useStore.getState().inputImages).toEqual([])
   })
 
   it('asks whether to submit with current API profile when the reused API profile is missing', async () => {

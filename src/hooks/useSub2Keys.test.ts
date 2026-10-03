@@ -32,6 +32,8 @@ beforeEach(() => {
 afterEach(async () => { await act(async () => root.unmount()); vi.clearAllMocks(); vi.unstubAllGlobals() })
 it('automatically configures the same-origin image API after loading key and model', async () => {
   await act(async () => root.render(createElement(Harness)))
+  expect(useStore.getState().settings.profiles.find((profile) => profile.id === 'sub2-key-2')?.apiKey).toBe('test-2')
+  expect(useStore.getState().settings.reuseTaskApiProfileTemporarily).toBe(true)
   expect(result.keyId).toBe('1')
   expect(result.model).toBe('gpt-image-2')
   expect(useStore.getState().settings.apiKey).toBe('test-1')

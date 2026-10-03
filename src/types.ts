@@ -12,7 +12,7 @@ export const ZIP_DOWNLOAD_ROUTE_VALUES = [
   'task-detail-partial',
 ] as const
 export type ZipDownloadRoute = typeof ZIP_DOWNLOAD_ROUTE_VALUES[number]
-export const DEFAULT_ZIP_DOWNLOAD_ROUTES: ZipDownloadRoute[] = ['task-selection', 'favorite-collection-selection']
+export const DEFAULT_ZIP_DOWNLOAD_ROUTES: ZipDownloadRoute[] = []
 export type BuiltInApiProvider = 'openai' | 'sb2api-async' | 'fal'
 export type ApiProvider = BuiltInApiProvider | string
 export type CustomProviderTemplate = 'http-image'
